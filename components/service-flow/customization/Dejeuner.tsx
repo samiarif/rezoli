@@ -1,0 +1,261 @@
+"use client";
+
+import * as React from "react";
+import type { FlowState, FlowAction } from "../state";
+import { ModalQuestion, OptionPill, PillGrid } from "./parts";
+
+type Options = { boissons: string[]; sale: string[]; sucre: string[] };
+
+type LocalState = {
+  step: 1 | 2 | 3 | 4 | 5 | 6;
+  boissons: string[];
+  entree: boolean | null;
+  plat: "chaud" | "sandwich" | null;
+  dessert: boolean | null;
+  dessertType: "gateau" | "fruit" | "les_deux" | null;
+  serviceMode: "lunch_box" | "a_table" | null;
+};
+
+export function DejeunerCustomization({
+  state,
+  dispatch,
+  options,
+}: {
+  state: FlowState;
+  dispatch: React.Dispatch<FlowAction>;
+  options: Options;
+}) {
+  const initial: LocalState =
+    state.details?.service === "pauses-dejeuner" && state.details.formulaId === "personnalise"
+      ? {
+          step: 1,
+          boissons: state.details.boissons,
+          entree: state.details.entree,
+          plat: state.details.plat,
+          dessert: state.details.dessert,
+          dessertType: state.details.dessertType ?? null,
+          serviceMode: state.details.serviceMode,
+        }
+      : {
+          step: 1,
+          boissons: [],
+          entree: null,
+          plat: null,
+          dessert: null,
+          dessertType: null,
+          serviceMode: null,
+        };
+
+  const [s, setS] = React.useState<LocalState>(initial);
+
+  const toggleBoisson = (v: string) =>
+    setS((p) => ({
+      ...p,
+      boissons: p.boissons.includes(v)
+        ? p.boissons.filter((x) => x !== v)
+        : [...p.boissons, v],
+    }));
+
+  const next = () => setS((p) => ({ ...p, step: (p.step + 1) as LocalState["step"] }));
+  const prev = () => setS((p) => ({ ...p, step: Math.max(1, p.step - 1) as LocalState["step"] }));
+
+  function commit() {
+    dispatch({
+      type: "SET_CUSTOM_DETAILS",
+      details: {
+        service: "pauses-dejeuner",
+        formulaId: "personnalise",
+        boissons: s.boissons,
+        entree: !!s.entree,
+        plat: s.plat ?? "chaud",
+        dessert: !!s.dessert,
+        dessertType: s.dessert ? (s.dessertType ?? "les_deux") : undefined,
+        serviceMode: s.serviceMode ?? "lunch_box",
+      },
+    });
+  }
+
+  if (s.step === 1) {
+    return (
+      <ModalQuestion
+        index={1}
+        total={6}
+        title="Quelles boissons souhaitez-vous ?"
+        hint="Plusieurs choix possibles"
+        onNext={next}
+        nextDisabled={s.boissons.length === 0}
+      >
+        <PillGrid>
+          {options.boissons.map((b) => (
+            <OptionPill
+              key={b}
+              label={b}
+              selected={s.boissons.includes(b)}
+              onClick={() => toggleBoisson(b)}
+            />
+          ))}
+        </PillGrid>
+      </ModalQuestion>
+    );
+  }
+
+  if (s.step === 2) {
+    return (
+      <ModalQuestion
+        index={2}
+        total={6}
+        title="Souhaitez-vous une entrée ?"
+        onPrev={prev}
+        onNext={next}
+        nextDisabled={s.entree === null}
+      >
+        <div className="flex gap-2">
+          <Pill label="Oui" selected={s.entree === true} onClick={() => setS({ ...s, entree: true })} />
+          <Pill label="Non" selected={s.entree === false} onClick={() => setS({ ...s, entree: false })} />
+        </div>
+      </ModalQuestion>
+    );
+  }
+
+  if (s.step === 3) {
+    return (
+      <ModalQuestion
+        index={3}
+        total={6}
+        title="Préférez-vous un plat chaud ou un sandwich ?"
+        onPrev={prev}
+        onNext={next}
+        nextDisabled={s.plat === null}
+      >
+        <div className="flex gap-2">
+          <Pill label="Plat chaud" selected={s.plat === "chaud"} onClick={() => setS({ ...s, plat: "chaud" })} />
+          <Pill label="Sandwich" selected={s.plat === "sandwich"} onClick={() => setS({ ...s, plat: "sandwich" })} />
+        </div>
+      </ModalQuestion>
+    );
+  }
+
+  if (s.step === 4) {
+    return (
+      <ModalQuestion
+        index={4}
+        total={6}
+        title="Souhaitez-vous un dessert ?"
+        onPrev={prev}
+        onNext={() => {
+          if (s.dessert === false) {
+            setS({ ...s, step: 6, dessertType: null });
+          } else {
+            next();
+          }
+        }}
+        nextDisabled={s.dessert === null}
+      >
+        <div className="flex gap-2">
+          <Pill label="Oui" selected={s.dessert === true} onClick={() => setS({ ...s, dessert: true })} />
+          <Pill label="Non" selected={s.dessert === false} onClick={() => setS({ ...s, dessert: false })} />
+        </div>
+      </ModalQuestion>
+    );
+  }
+
+  if (s.step === 5) {
+    return (
+      <ModalQuestion
+        index={5}
+        total={6}
+        title="Quel type de dessert ?"
+        onPrev={prev}
+        onNext={next}
+        nextDisabled={s.dessertType === null}
+      >
+        <div className="flex flex-wrap gap-2">
+          <Pill label="Gâteau / Pâtisserie" selected={s.dessertType === "gateau"} onClick={() => setS({ ...s, dessertType: "gateau" })} />
+          <Pill label="Fruit" selected={s.dessertType === "fruit"} onClick={() => setS({ ...s, dessertType: "fruit" })} />
+          <Pill label="Les deux" selected={s.dessertType === "les_deux"} onClick={() => setS({ ...s, dessertType: "les_deux" })} />
+        </div>
+      </ModalQuestion>
+    );
+  }
+
+  return (
+    <ModalQuestion
+      index={6}
+      total={6}
+      title="Quel mode de service préférez-vous ?"
+      onPrev={() => setS({ ...s, step: s.dessert ? 5 : 4 })}
+      onNext={commit}
+      nextLabel="Valider mes choix"
+      isLast
+      nextDisabled={s.serviceMode === null}
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ServiceOption
+          title="Lunch box"
+          desc="Box individuelles à emporter"
+          selected={s.serviceMode === "lunch_box"}
+          onClick={() => setS({ ...s, serviceMode: "lunch_box" })}
+        />
+        <ServiceOption
+          title="À table"
+          desc="Service en salle, vaisselle incluse"
+          selected={s.serviceMode === "a_table"}
+          onClick={() => setS({ ...s, serviceMode: "a_table" })}
+        />
+      </div>
+    </ModalQuestion>
+  );
+}
+
+function Pill({
+  label,
+  selected,
+  onClick,
+}: {
+  label: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "rounded-md px-5 py-2 text-sm font-medium ring-1 transition-colors " +
+        (selected
+          ? "bg-teal-500 text-white ring-teal-500"
+          : "bg-background ring-border hover:ring-teal-500/30")
+      }
+    >
+      {label}
+    </button>
+  );
+}
+
+function ServiceOption({
+  title,
+  desc,
+  selected,
+  onClick,
+}: {
+  title: string;
+  desc: string;
+  selected: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "rounded-lg p-4 ring-1 text-left transition-all " +
+        (selected
+          ? "bg-teal-50 ring-2 ring-teal-500"
+          : "bg-background ring-border hover:ring-teal-500/30")
+      }
+    >
+      <p className="font-display font-semibold">{title}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">{desc}</p>
+    </button>
+  );
+}

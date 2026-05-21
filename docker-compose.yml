@@ -1,0 +1,29 @@
+services:
+    rezoli:
+        image: ghcr.io/${GITHUB_REPOSITORY_OWNER}/rezoli:${IMAGE_TAG:-latest}
+        container_name: rezoli
+        restart: unless-stopped
+        environment:
+            - NODE_ENV=production
+            - NEXT_TELEMETRY_DISABLED=1
+            - PORT=5190
+            - HOSTNAME=0.0.0.0
+        env_file:
+            - .env.production
+        healthcheck:
+            test: ["CMD-SHELL", "wget -qO- http://localhost:5190/ || exit 1"]
+            interval: 30s
+            timeout: 10s
+            retries: 3
+            start_period: 15s
+        networks:
+            - edge-net
+        logging:
+            driver: "json-file"
+            options:
+                max-size: "10m"
+                max-file: "3"
+
+networks:
+    edge-net:
+        external: true

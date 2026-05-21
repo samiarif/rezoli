@@ -1,0 +1,391 @@
+// Rezoli platform — Postgres on Supabase
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  CUSTOMER
+  ADMIN
+  MANAGER
+}
+
+enum QuoteStatus {
+  PENDING
+  REVIEWED
+  QUOTE_SENT
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum ItemKind {
+  SERVICE
+  PACK
+}
+
+enum PartnerAppStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ContactStatus {
+  NEW
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum RealisationStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum RejectionReason {
+  DATE_UNAVAILABLE
+  LOGISTIC_CAPACITY
+  ZONE_UNCOVERED
+  MIN_QUANTITY_NOT_MET
+  TOO_LATE
+  PARTNERS_UNAVAILABLE
+  TECHNICAL_CONSTRAINTS
+  BUDGET_INSUFFICIENT
+  FORMAT_NOT_OFFERED
+  EQUIPMENT_UNAVAILABLE
+  VENUE_CONDITIONS
+  PRIORITY_CONFLICT
+  INCOMPLETE_INFO
+  OUT_OF_SCOPE
+  GUEST_COUNT_TOO_HIGH
+}
+
+model User {
+  id              String         @id @default(cuid())
+  email           String         @unique
+  supabaseUserId  String?        @unique
+  role            UserRole       @default(CUSTOMER)
+  firstName       String?
+  lastName        String?
+  phone           String?
+  company         String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  quotes          QuoteRequest[]
+  blogPosts       BlogPost[]     @relation("BlogAuthor")
+  uploadedAssets  MediaAsset[]
+
+  @@index([email])
+}
+
+model QuoteRequest {
+  id                 String       @id @default(cuid())
+  ref                String       @unique
+  userId             String?
+  user               User?        @relation(fields: [userId], references: [id])
+
+  email              String
+  firstName          String
+  lastName           String
+  phone              String
+  company            String?
+
+  eventDate          DateTime?
+  eventTime          String?
+  eventType          String
+  guestCount         Int
+  location           String
+  budgetHint         String?
+  message            String?
+  details            Json?
+
+  status             QuoteStatus       @default(PENDING)
+  rejectionReason    RejectionReason?
+  alternativeProposal String?
+  internalNotes      String?
+  finalQuotePdfUrl   String?
+  finalQuoteTotalTND Decimal?          @db.Decimal(10, 2)
+  consentRgpd        Boolean           @default(false)
+
+  hubspotContactId   String?
+  hubspotDealId      String?
+
+  subtotalHTSnapshot Decimal?     @db.Decimal(10, 2)
+  tvaRateSnapshot    Decimal?     @db.Decimal(4, 2)
+  totalTTCSnapshot   Decimal?     @db.Decimal(10, 2)
+
+  items              QuoteItem[]
+  events             QuoteEvent[]
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([email])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model QuoteItem {
+  id           String       @id @default(cuid())
+  quoteId      String
+  quote        QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  refId        String
+  kind         ItemKind
+  name         String
+  tier         String?
+  audience     String?
+  unitPriceTND Decimal?     @db.Decimal(10, 2)
+  quantity     Int
+  notes        String?
+  imageUrl     String?
+}
+
+model QuoteEvent {
+  id           String       @id @default(cuid())
+  quoteId      String
+  quote        QuoteRequest @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  type         String
+  fromStatus   QuoteStatus?
+  toStatus     QuoteStatus?
+  actorUserId  String?
+  payload      Json?
+  createdAt    DateTime     @default(now())
+
+  @@index([quoteId])
+}
+
+model PartnerApplication {
+  id           String          @id @default(cuid())
+  companyName  String
+  contactName  String
+  email        String
+  phone        String
+  partnerType  String
+  message      String?
+  status       PartnerAppStatus @default(PENDING)
+  reviewedById String?
+  reviewedAt   DateTime?
+  createdAt    DateTime        @default(now())
+
+  @@index([status])
+}
+
+model ContactMessage {
+  id        String        @id @default(cuid())
+  name      String
+  email     String
+  phone     String?
+  subject   String
+  message   String
+  status    ContactStatus @default(NEW)
+  createdAt DateTime      @default(now())
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  date      DateTime @unique @db.Date
+  reason    String?
+  createdAt DateTime @default(now())
+
+  @@index([date])
+}
+
+model MagicLinkRequest {
+  id        String   @id @default(cuid())
+  email     String
+  purpose   String
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+/* ─────────── CATALOG (admin-editable) ─────────── */
+
+model Service {
+  id              String                @id @default(cuid())
+  slug            String                @unique
+  name            String
+  shortName       String
+  tagline         String
+  description     String
+  longDescription String
+  highlights      String[]
+  minGuests       Int
+  startingPriceTND Decimal              @db.Decimal(10, 2)
+  badge           String?
+  imageUrl        String?
+  imageAlt        String?
+  order           Int                   @default(0)
+  published       Boolean               @default(true)
+  packs           ServicePack[]
+  customOptions   ServiceCustomOption[]
+  stations        Station[]
+  updatedAt       DateTime              @updatedAt
+}
+
+model ServicePack {
+  id          String   @id @default(cuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  packKey     String
+  name        String
+  badgeLabel  String
+  description String?
+  content     Json
+  order       Int      @default(0)
+
+  @@unique([serviceId, packKey])
+}
+
+model ServiceCustomOption {
+  id        String   @id @default(cuid())
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  category  String
+  label     String
+  order     Int      @default(0)
+
+  @@index([serviceId, category])
+}
+
+model Station {
+  id          String   @id @default(cuid())
+  serviceId   String
+  service     Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  stationKey  String
+  name        String
+  description String
+  pricing     Json
+  order       Int      @default(0)
+
+  @@unique([serviceId, stationKey])
+}
+
+model EventPackCategory {
+  id               String            @id @default(cuid())
+  slug             String            @unique
+  name             String
+  description      String
+  badge            String
+  tagline          String
+  guestCountConfig Json
+  order            Int               @default(0)
+  published        Boolean           @default(true)
+  tiers            EventPackTier[]
+  options          EventPackOption[]
+  updatedAt        DateTime          @updatedAt
+}
+
+model EventPackTier {
+  id          String            @id @default(cuid())
+  categoryId  String
+  category    EventPackCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  tierKey     String
+  badge       String
+  name        String
+  description String
+  content     Json
+  price       Json
+  order       Int               @default(0)
+
+  @@unique([categoryId, tierKey])
+}
+
+model EventPackOption {
+  id          String            @id @default(cuid())
+  categoryId  String
+  category    EventPackCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  optionKey   String
+  name        String
+  description String?
+  priceHT     Decimal           @db.Decimal(10, 2)
+  order       Int               @default(0)
+}
+
+/* ─────────── MEDIA ─────────── */
+
+model MediaAsset {
+  id           String   @id @default(cuid())
+  url          String
+  bucketPath   String   @unique
+  originalName String
+  mimeType     String
+  size         Int
+  width        Int?
+  height       Int?
+  altText      String?
+  uploadedById String?
+  uploadedBy   User?    @relation(fields: [uploadedById], references: [id])
+  createdAt    DateTime @default(now())
+
+  @@index([createdAt])
+}
+
+/* ─────────── BLOG ─────────── */
+
+model BlogPost {
+  id             String         @id @default(cuid())
+  slug           String         @unique
+  title          String
+  excerpt        String?
+  coverImageUrl  String?
+  content        Json
+  tags           String[]
+  status         BlogPostStatus @default(DRAFT)
+  publishedAt    DateTime?
+  authorId       String?
+  author         User?          @relation("BlogAuthor", fields: [authorId], references: [id])
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([status])
+  @@index([publishedAt])
+}
+
+/* ─────────── RÉALISATIONS ─────────── */
+
+model Realisation {
+  id            String            @id @default(cuid())
+  slug          String            @unique
+  title         String
+  eventType     String
+  clientName    String?
+  date          DateTime?
+  location      String?
+  guestCount    Int?
+  heroImageUrl  String?
+  heroImageAlt  String?
+  gallery       String[]
+  shortPitch    String
+  longContent   Json?
+  outcomes      Json?
+  testimonial   Json?
+  status        RealisationStatus @default(DRAFT)
+  publishedAt   DateTime?
+  featured      Boolean           @default(false)
+  order         Int               @default(0)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@index([status])
+  @@index([featured])
+  @@index([eventType])
+}
