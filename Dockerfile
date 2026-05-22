@@ -57,7 +57,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PORT=5190
+ENV PORT=5204
 ENV HOSTNAME="0.0.0.0"
 
 # wget for healthcheck, openssl for Prisma engine at runtime
@@ -74,9 +74,9 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma           ./prisma
 
 USER nextjs
 
-EXPOSE 5190
+EXPOSE 5204
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=15s --retries=3 \
-  CMD wget -qO- http://localhost:5190/ || exit 1
+  CMD wget -qO- http://localhost:5204/ || exit 1
 
 CMD ["node", "server.js"]
