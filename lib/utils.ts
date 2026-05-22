@@ -25,7 +25,7 @@ export function formatDateFr(date: Date | string): string {
 }
 
 export const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL ?? "https://rezoli.tn";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://rezoli.tn";
 
 export const BUSINESS = {
   name: "Rezoli",
