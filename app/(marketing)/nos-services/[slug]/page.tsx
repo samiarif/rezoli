@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PageHero } from "@/components/sections/PageHero";
+import { ServicePartners } from "@/components/sections/ServicePartners";
 import { ServiceQuoteFlow } from "@/components/service-flow/ServiceQuoteFlow";
 import { BreadcrumbJsonLd, ServiceJsonLd } from "@/components/seo/JsonLd";
 import { SITE_URL } from "@/lib/utils";
@@ -96,6 +97,8 @@ export default async function ServiceDetailPage({
         blockedDates={blockedDates}
         preselectFormula={formule}
       />
+
+      <ServicePartners service={serviceSlug} />
     </>
   );
 }

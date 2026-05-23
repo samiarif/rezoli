@@ -4,35 +4,58 @@
  * `lib/service-catalog.ts`.
  */
 
+import type { ServiceSlug } from "./service-catalog";
+
 export { services, getServiceMeta as getServiceBySlug } from "./service-catalog";
 export type { ServiceSlug, ServiceMeta as Service } from "./service-catalog";
 
 /* ─── Partners ───────────────────────────────────────────────────── */
 
+/**
+ * Culinary partners — traiteurs, pâtisseries, restaurants, food concepts.
+ * Each partner is scoped to one or more services so they can be surfaced on
+ * the matching service detail pages (bottom of /nos-services/[slug]).
+ *
+ * `logo` is an optional path under /public (e.g. "/partners/vedge.png").
+ * When absent, the UI renders an elegant text capsule.
+ */
 export type Partner = {
   id: string;
   name: string;
-  category: "client" | "supplier" | "venue";
+  /** Optional logo path under /public — UI falls back to a text capsule when absent. */
+  logo?: string;
+  /** Services this partner is associated with (used to filter the per-service section). */
+  services: ServiceSlug[];
 };
 
 export const partners: Partner[] = [
-  { id: "p1", name: "Carthage Group", category: "client" },
-  { id: "p2", name: "Tunisie Telecom", category: "client" },
-  { id: "p3", name: "Banque de Tunisie", category: "client" },
-  { id: "p4", name: "Université de Carthage", category: "client" },
-  { id: "p5", name: "Marriott Tunis", category: "venue" },
-  { id: "p6", name: "Four Seasons", category: "venue" },
-  { id: "p7", name: "Mövenpick", category: "venue" },
-  { id: "p8", name: "Café Bondin", category: "supplier" },
-  { id: "p9", name: "Domaine Magon", category: "supplier" },
-  { id: "p10", name: "Pâtisserie Hosni", category: "supplier" },
-  { id: "p11", name: "Boucherie Excellence", category: "supplier" },
-  { id: "p12", name: "Fleurs de Sidi Bou", category: "supplier" },
+  // Cocktails dînatoires
+  { id: "vedge", name: "Vedge", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "jutop", name: "Ju'Top", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "gourmandise", name: "Gourmandise", services: ["cocktails-dinatoires", "pauses-cafe"] },
+
+  // Pauses café (additional)
+  { id: "symphonie-gourmande", name: "Symphonie Gourmande", services: ["pauses-cafe"] },
+  { id: "traiteur-ben-yedder", name: "Traiteur Ben Yedder", services: ["pauses-cafe", "pauses-dejeuner"] },
+
+  // Pauses déjeuner
+  { id: "chef-amine", name: "Chef Amine", services: ["pauses-dejeuner"] },
+  { id: "best-food-catering", name: "Best Food Catering", services: ["pauses-dejeuner"] },
+
+  // Stations street-food
+  { id: "king-shawarma", name: "King Shawarma", services: ["stations-street-food"] },
+  { id: "pizza-mizen", name: "Pizza Mizen", services: ["stations-street-food"] },
+  { id: "pizzagram", name: "Pizzagram", services: ["stations-street-food"] },
+  { id: "creperie-jouliano", name: "Crêperie Jouliano", services: ["stations-street-food"] },
+  { id: "le-fumoir", name: "Le Fumoir", services: ["stations-street-food"] },
+  { id: "munchies", name: "Munchies", services: ["stations-street-food"] },
 ];
 
-/* ─── Testimonials ───────────────────────────────────────────────── */
+export function partnersForService(slug: ServiceSlug): Partner[] {
+  return partners.filter((p) => p.services.includes(slug));
+}
 
-import type { ServiceSlug } from "./service-catalog";
+/* ─── Testimonials ───────────────────────────────────────────────── */
 
 export type Testimonial = {
   id: string;
