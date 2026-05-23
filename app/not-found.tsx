@@ -49,7 +49,7 @@ export default function NotFound() {
             <div className="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-3 text-left text-sm">
               {[
                 { href: "/nos-services", label: "Nos services" },
-                { href: "/nos-packs", label: "Nos packs" },
+                { href: "/nos-packs", label: "Packs Événements" },
                 { href: "/realisations", label: "Réalisations" },
                 { href: "/blog", label: "Blog" },
                 { href: "/a-propos", label: "À propos" },
