@@ -1,8 +1,19 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
+import { CATALOG_CACHE_TAGS } from "@/lib/catalog-loader";
+
+/** Invalidate all catalog-related caches in one shot. `updateTag` is the
+ *  Server-Action-scoped Next 16 helper that gives read-your-own-writes
+ *  semantics — preferred over `revalidateTag` here. */
+function revalidateAllCatalog() {
+  updateTag(CATALOG_CACHE_TAGS.services);
+  updateTag(CATALOG_CACHE_TAGS.packs);
+  updateTag(CATALOG_CACHE_TAGS.stations);
+  updateTag(CATALOG_CACHE_TAGS.customOptions);
+}
 
 const serviceMetaSchema = z.object({
   slug: z.string().min(2),
@@ -49,6 +60,7 @@ export async function updateServiceMeta(input: unknown) {
   revalidatePath("/nos-services");
   revalidatePath(`/nos-services/${data.slug}`);
   revalidatePath("/admin/catalog/services");
+  revalidateAllCatalog();
   return { ok: true };
 }
 
@@ -82,6 +94,7 @@ export async function updateServicePack(input: unknown) {
   });
   revalidatePath(`/nos-services/${pack.service.slug}`);
   revalidatePath("/nos-packs");
+  updateTag(CATALOG_CACHE_TAGS.packs);
   return { ok: true };
 }
 
@@ -116,6 +129,7 @@ export async function replaceCustomOptions(input: unknown) {
     });
   }
   revalidatePath(`/nos-services/${data.serviceSlug}`);
+  updateTag(CATALOG_CACHE_TAGS.customOptions);
   return { ok: true };
 }
 
@@ -144,5 +158,6 @@ export async function updateStation(input: unknown) {
     },
   });
   revalidatePath("/nos-services/stations-street-food");
+  updateTag(CATALOG_CACHE_TAGS.stations);
   return { ok: true };
 }

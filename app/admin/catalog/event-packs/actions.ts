@@ -1,8 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { z } from "zod";
 import { requireAdmin } from "@/lib/auth";
+import { CATALOG_CACHE_TAGS } from "@/lib/catalog-loader";
 
 const categoryMetaSchema = z.object({
   slug: z.string().min(2),
@@ -35,6 +36,7 @@ export async function updateCategoryMeta(input: unknown) {
     },
   });
   revalidatePath("/nos-packs");
+  updateTag(CATALOG_CACHE_TAGS.eventPacks);
   revalidatePath("/admin/catalog/event-packs");
   return { ok: true };
 }
@@ -69,6 +71,7 @@ export async function updateTier(input: unknown) {
     include: { category: true },
   });
   revalidatePath("/nos-packs");
+  updateTag(CATALOG_CACHE_TAGS.eventPacks);
   revalidatePath(`/admin/catalog/event-packs/${tier.category.slug}`);
   return { ok: true };
 }
@@ -110,5 +113,6 @@ export async function replaceOptions(input: unknown) {
     });
   }
   revalidatePath("/nos-packs");
+  updateTag(CATALOG_CACHE_TAGS.eventPacks);
   return { ok: true };
 }

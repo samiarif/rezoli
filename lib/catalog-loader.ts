@@ -2,8 +2,15 @@
  * Catalog loaders: DB-first, with code-catalog fallback when DATABASE_URL is
  * missing or the table is empty. The returned shapes mirror the in-code types
  * so existing UI components keep working.
+ *
+ * Each public loader is wrapped with `unstable_cache` (tagged) at the bottom of
+ * the file so repeated calls within the same request — and across requests —
+ * hit the Next.js Data Cache. Admin mutations should call `revalidateTag()`
+ * with the matching tag to invalidate, in addition to the existing
+ * `revalidatePath()` calls.
  */
 import "server-only";
+import { unstable_cache } from "next/cache";
 
 import type {
   ServiceMeta,
@@ -15,9 +22,23 @@ import type {
 } from "./service-catalog";
 import type { PackCategory } from "./event-packs-catalog";
 
+/**
+ * Cache tags — call `revalidateTag(tag)` from server actions when the
+ * underlying data changes (in addition to revalidatePath).
+ */
+export const CATALOG_CACHE_TAGS = {
+  services: "catalog:services",
+  packs: "catalog:packs",
+  stations: "catalog:stations",
+  customOptions: "catalog:custom-options",
+  eventPacks: "catalog:event-packs",
+} as const;
+
+const CATALOG_REVALIDATE_SECONDS = 300; // 5 minutes — catalog is near-static
+
 /* ─── Services ─────────────────────────────────────────────────────── */
 
-export async function loadServices(): Promise<ServiceMeta[]> {
+async function _loadServices(): Promise<ServiceMeta[]> {
   if (process.env.DATABASE_URL) {
     try {
       const { prisma } = await import("./prisma");
@@ -57,6 +78,11 @@ export async function loadServices(): Promise<ServiceMeta[]> {
   return services.map((s) => ({ ...s, icon: undefined as unknown as ServiceMeta["icon"] }));
 }
 
+export const loadServices = unstable_cache(_loadServices, ["catalog:services"], {
+  tags: [CATALOG_CACHE_TAGS.services],
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+});
+
 export async function loadServiceBySlug(
   slug: string
 ): Promise<ServiceMeta | undefined> {
@@ -68,7 +94,7 @@ export async function loadServiceBySlug(
 
 type AnyPack = CocktailPack | CafePack | DejeunerPack;
 
-export async function loadServicePacks(slug: ServiceSlug): Promise<AnyPack[]> {
+async function _loadServicePacks(slug: ServiceSlug): Promise<AnyPack[]> {
   if (process.env.DATABASE_URL) {
     try {
       const { prisma } = await import("./prisma");
@@ -107,9 +133,15 @@ export async function loadServicePacks(slug: ServiceSlug): Promise<AnyPack[]> {
   return [];
 }
 
+export const loadServicePacks = unstable_cache(
+  _loadServicePacks,
+  ["catalog:packs"],
+  { tags: [CATALOG_CACHE_TAGS.packs], revalidate: CATALOG_REVALIDATE_SECONDS }
+);
+
 /* ─── Stations (street-food) ───────────────────────────────────────── */
 
-export async function loadStations(): Promise<StreetfoodStation[]> {
+async function _loadStations(): Promise<StreetfoodStation[]> {
   if (process.env.DATABASE_URL) {
     try {
       const { prisma } = await import("./prisma");
@@ -138,9 +170,14 @@ export async function loadStations(): Promise<StreetfoodStation[]> {
   return streetfoodStations;
 }
 
+export const loadStations = unstable_cache(_loadStations, ["catalog:stations"], {
+  tags: [CATALOG_CACHE_TAGS.stations],
+  revalidate: CATALOG_REVALIDATE_SECONDS,
+});
+
 /* ─── Custom options ───────────────────────────────────────────────── */
 
-export async function loadCustomOptions(
+async function _loadCustomOptions(
   slug: ServiceSlug
 ): Promise<{ boissons: string[]; sale: string[]; sucre: string[] }> {
   if (process.env.DATABASE_URL) {
@@ -177,9 +214,18 @@ export async function loadCustomOptions(
   return { boissons: [], sale: [], sucre: [] };
 }
 
+export const loadCustomOptions = unstable_cache(
+  _loadCustomOptions,
+  ["catalog:custom-options"],
+  {
+    tags: [CATALOG_CACHE_TAGS.customOptions],
+    revalidate: CATALOG_REVALIDATE_SECONDS,
+  }
+);
+
 /* ─── Event packs ──────────────────────────────────────────────────── */
 
-export async function loadEventPackCategories(): Promise<PackCategory[]> {
+async function _loadEventPackCategories(): Promise<PackCategory[]> {
   if (process.env.DATABASE_URL) {
     try {
       const { prisma } = await import("./prisma");
@@ -222,6 +268,15 @@ export async function loadEventPackCategories(): Promise<PackCategory[]> {
   const { eventPackCategories } = await import("./event-packs-catalog");
   return eventPackCategories;
 }
+
+export const loadEventPackCategories = unstable_cache(
+  _loadEventPackCategories,
+  ["catalog:event-packs"],
+  {
+    tags: [CATALOG_CACHE_TAGS.eventPacks],
+    revalidate: CATALOG_REVALIDATE_SECONDS,
+  }
+);
 
 export async function loadEventPackCategory(
   slug: string
