@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { Mail, Phone, MapPin } from "lucide-react";
 import { BUSINESS } from "@/lib/utils";
 
@@ -61,9 +62,19 @@ export function SiteFooter() {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-5">
           {/* Brand block */}
           <div className="lg:col-span-2">
-            <Link href="/" className="font-display text-3xl font-bold tracking-tight">
-              <span className="text-white">{BUSINESS.name}</span>
-              <span className="text-amber-500">.</span>
+            <Link
+              href="/"
+              aria-label={BUSINESS.name}
+              className="inline-flex items-center transition-opacity hover:opacity-80"
+            >
+              <Image
+                src="/logo-rezoli.png"
+                alt={BUSINESS.name}
+                width={1131}
+                height={348}
+                sizes="180px"
+                className="h-10 w-auto invert brightness-0"
+              />
             </Link>
             <p className="mt-4 text-sm text-cream-50/70 max-w-xs leading-relaxed">
               {BUSINESS.tagline}. Traiteur premium pour vos événements

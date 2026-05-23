@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,7 +17,7 @@ import { cn, BUSINESS } from "@/lib/utils";
 
 const NAV_LINKS = [
   { href: "/nos-services", label: "Services" },
-  { href: "/nos-packs", label: "Packs" },
+  { href: "/nos-packs", label: "Packs Événements" },
   { href: "/realisations", label: "Réalisations" },
   { href: "/nos-partenaires", label: "Nos partenaires" },
   { href: "/blog", label: "Blog" },
@@ -55,13 +56,23 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
       >
         <Link
           href="/"
+          aria-label={BUSINESS.name}
           className={cn(
-            "font-display text-2xl font-bold tracking-tight transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 rounded",
-            isDark ? "text-white" : "text-teal-700"
+            "inline-flex items-center transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 focus-visible:ring-offset-2 rounded"
           )}
         >
-          {BUSINESS.name}
-          <span className={isDark ? "text-amber-500" : "text-neutral-900"}>.</span>
+          <Image
+            src="/logo-rezoli.png"
+            alt={BUSINESS.name}
+            width={1131}
+            height={348}
+            priority
+            sizes="(max-width: 640px) 110px, 140px"
+            className={cn(
+              "h-8 w-auto sm:h-9",
+              isDark && "invert brightness-0"
+            )}
+          />
         </Link>
 
         <ul className="hidden lg:flex items-center gap-1">
@@ -128,10 +139,15 @@ export function SiteHeader({ variant = "light" }: { variant?: "light" | "dark" }
             </SheetTrigger>
             <SheetContent side="right" className="flex flex-col">
               <SheetHeader>
-                <SheetTitle>
-                  <span className="text-teal-700">{BUSINESS.name}</span>
-                  <span className="text-neutral-900">.</span>
-                </SheetTitle>
+                <SheetTitle className="sr-only">{BUSINESS.name}</SheetTitle>
+                <Image
+                  src="/logo-rezoli.png"
+                  alt={BUSINESS.name}
+                  width={1131}
+                  height={348}
+                  className="h-8 w-auto"
+                  sizes="140px"
+                />
               </SheetHeader>
               <ul className="flex-1 overflow-y-auto px-6 py-6 space-y-1">
                 {NAV_LINKS.map((link) => (
