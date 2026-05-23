@@ -87,7 +87,11 @@ export async function submitServiceQuote(
     return { ok: false, message: "Service invalide pour cette voie." };
   }
   if (data.details.service === "stations-street-food") {
-    const r = streetfoodSubtotal(data.details.stations, data.guestCount);
+    const r = streetfoodSubtotal(
+      data.details.stations,
+      data.guestCount,
+      data.details.multiPackId
+    );
     const t = totalsFromSubtotal(r.subtotalHT);
     subtotalHT = t.subtotalHT;
     tvaRate = t.tvaRate;
@@ -216,7 +220,15 @@ async function persistQuote(
     if (data.details.service !== "stations-street-food") {
       itemName = `${serviceName} — ${formulaLabel(data.details.formulaId)}`;
     } else {
-      itemName = `${serviceName} — ${data.details.stations.length} station(s)`;
+      const parts: string[] = [];
+      if (data.details.multiPackId) parts.push("pack multi-stations");
+      if (data.details.stations.length > 0)
+        parts.push(
+          `${data.details.stations.length} station${
+            data.details.stations.length > 1 ? "s" : ""
+          }`
+        );
+      itemName = `${serviceName} — ${parts.join(" + ") || "sélection"}`;
     }
 
     await prisma.quoteRequest.create({

@@ -13,6 +13,7 @@ import {
   getCafePack,
   getDejeunerPack,
   getStation,
+  streetfoodMultiPackPricePerPerson,
   type ServiceSlug,
 } from "./service-catalog";
 
@@ -116,8 +117,13 @@ export function streetfoodLinePrice(
 
 export function streetfoodSubtotal(
   selections: StationSelection[],
-  nb: number
-): { subtotalHT: number; lines: Array<{ selection: StationSelection; unitPrice: number; total: number }> } {
+  nb: number,
+  multiPackId?: string
+): {
+  subtotalHT: number;
+  lines: Array<{ selection: StationSelection; unitPrice: number; total: number }>;
+  multiPackLine?: { unitPrice: number; total: number };
+} {
   const lines = selections
     .map((s) => {
       const r = streetfoodLinePrice(s, nb);
@@ -128,8 +134,18 @@ export function streetfoodSubtotal(
     unitPrice: number;
     total: number;
   }>;
-  const subtotalHT = lines.reduce((sum, l) => sum + l.total, 0);
-  return { subtotalHT: +subtotalHT.toFixed(3), lines };
+  let subtotalHT = lines.reduce((sum, l) => sum + l.total, 0);
+
+  let multiPackLine: { unitPrice: number; total: number } | undefined;
+  if (multiPackId) {
+    const unit = streetfoodMultiPackPricePerPerson(multiPackId, nb);
+    if (unit != null) {
+      multiPackLine = { unitPrice: unit, total: unit * nb };
+      subtotalHT += multiPackLine.total;
+    }
+  }
+
+  return { subtotalHT: +subtotalHT.toFixed(3), lines, multiPackLine };
 }
 
 /* ─── Shared totals (HT / TVA / TTC) ──────────────────────────────── */

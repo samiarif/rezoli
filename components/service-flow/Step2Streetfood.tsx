@@ -1,11 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Check, ArrowRight, Plus, Minus } from "lucide-react";
+import { Check, ArrowRight, Plus, Minus, Layers } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn, formatTND } from "@/lib/utils";
-import type { StreetfoodStation } from "@/lib/service-catalog";
+import {
+  streetfoodMultiPacks,
+  streetfoodMultiPackPricePerPerson,
+  type StreetfoodStation,
+} from "@/lib/service-catalog";
 import { streetfoodLinePrice } from "@/lib/service-pricing";
 import type { FlowState, FlowAction } from "./state";
 import type { StationSelection } from "@/lib/schemas";
@@ -25,7 +29,14 @@ export function Step2Streetfood({
     state.details?.service === "stations-street-food"
       ? state.details.stations
       : [];
+  const existingMultiPack: string | undefined =
+    state.details?.service === "stations-street-food"
+      ? state.details.multiPackId
+      : undefined;
   const [selections, setSelections] = React.useState<StationSelection[]>(existing);
+  const [multiPackId, setMultiPackId] = React.useState<string | undefined>(
+    existingMultiPack
+  );
   const nb = state.guestCount;
 
   function getSel(stationId: string, variant?: string): StationSelection | undefined {
@@ -63,15 +74,22 @@ export function Step2Streetfood({
         service: "stations-street-food",
         formulaId: "personnalise",
         stations: selections,
+        multiPackId,
       },
     });
     onContinue();
   }
 
-  const total = selections.reduce((sum, s) => {
+  const stationsTotal = selections.reduce((sum, s) => {
     const line = streetfoodLinePrice(s, nb);
     return sum + (line?.total ?? 0);
   }, 0);
+  const multiPackUnit = multiPackId
+    ? streetfoodMultiPackPricePerPerson(multiPackId, nb)
+    : null;
+  const multiPackTotal = multiPackUnit != null ? multiPackUnit * nb : 0;
+  const total = stationsTotal + multiPackTotal;
+  const hasAnySelection = selections.length > 0 || !!multiPackId;
 
   return (
     <div className="space-y-6">
@@ -79,11 +97,88 @@ export function Step2Streetfood({
         <p className="eyebrow">Étape 2 / 3</p>
         <h2 className="display-2 mt-1">Sélectionnez vos stations</h2>
         <p className="text-sm text-muted-foreground mt-2">
-          Composez votre événement. Indiquez le nombre de pièces par personne
-          pour chaque station choisie.
+          Composez votre sélection librement : une ou plusieurs stations solo,
+          et/ou une formule multi-stations. Les prix sont indiqués par personne (HT).
         </p>
       </header>
 
+      {/* ── Multi-stations packs ── */}
+      <section>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+            <Layers className="size-4" />
+          </span>
+          <div>
+            <h3 className="font-display text-base font-semibold">
+              Packs multi-stations
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              1 formule au choix — combinaison clé en main de 2 à 4 stations.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {streetfoodMultiPacks.map((pack) => {
+            const unit = streetfoodMultiPackPricePerPerson(pack.id, nb) ?? 0;
+            const selected = multiPackId === pack.id;
+            return (
+              <button
+                type="button"
+                key={pack.id}
+                aria-pressed={selected}
+                onClick={() =>
+                  setMultiPackId((prev) => (prev === pack.id ? undefined : pack.id))
+                }
+                className={cn(
+                  "text-left rounded-xl bg-background p-4 ring-1 transition-all hover:-translate-y-0.5",
+                  selected
+                    ? "ring-2 ring-amber-500 shadow-md bg-amber-50/50"
+                    : "ring-border hover:ring-amber-400/40"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="font-display text-base font-semibold">
+                    {pack.name}
+                  </h4>
+                  <span
+                    className={cn(
+                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors",
+                      selected
+                        ? "bg-amber-500 text-white"
+                        : "border-2 border-neutral-300"
+                    )}
+                  >
+                    {selected && <Check className="size-3" strokeWidth={3} />}
+                  </span>
+                </div>
+                <ul className="mt-2 space-y-0.5">
+                  {pack.items.map((it) => (
+                    <li key={it} className="text-xs text-muted-foreground flex gap-1.5">
+                      <Check className="size-3 text-teal-600 shrink-0 mt-0.5" />
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold text-amber-700">
+                    {formatTND(unit)}
+                  </span>
+                  <span className="text-xs text-muted-foreground"> / pers. HT</span>
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── Stations solo ── */}
+      <section>
+        <h3 className="font-display text-base font-semibold mb-3">
+          Stations solo
+          <span className="ml-2 text-xs font-normal text-muted-foreground">
+            Sélection multiple possible
+          </span>
+        </h3>
       <div className="grid gap-4 sm:grid-cols-2">
         {stations.map((station) => {
           if (station.variants && station.multiVariant) {
@@ -212,13 +307,21 @@ export function Step2Streetfood({
           );
         })}
       </div>
+      </section>
 
       {/* Live total */}
-      {selections.length > 0 && (
-        <div className="rounded-xl bg-teal-50 ring-1 ring-teal-100 p-4 text-sm flex items-center justify-between">
+      {hasAnySelection && (
+        <div className="rounded-xl bg-teal-50 ring-1 ring-teal-100 p-4 text-sm flex items-center justify-between flex-wrap gap-2">
           <span>
             <strong>{selections.length}</strong> station
-            {selections.length > 1 ? "s" : ""} pour <strong>{nb}</strong> invités
+            {selections.length > 1 ? "s" : ""}
+            {multiPackId && (
+              <>
+                {" + "}
+                <strong>1 pack multi-stations</strong>
+              </>
+            )}
+            {" "}pour <strong>{nb}</strong> invités
           </span>
           <span className="tabular-nums font-semibold">
             Total HT : {formatTND(total)}
@@ -230,7 +333,7 @@ export function Step2Streetfood({
         <Button
           variant="solid"
           size="lg"
-          disabled={selections.length === 0}
+          disabled={!hasAnySelection}
           onClick={commit}
         >
           Continuer <ArrowRight className="size-4" />

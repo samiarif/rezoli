@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import type { FlowState, FlowAction } from "../state";
-import { ModalQuestion, OptionPill, PillGrid } from "./parts";
+import { ModalQuestion, OptionPill, PillGrid, LiveRecap } from "./parts";
 
 type Options = { boissons: string[]; sale: string[]; sucre: string[] };
 
 type LocalState = {
-  step: 1 | 2 | 3 | 4 | 5 | 6;
+  step: 1 | 2 | 3 | 4 | 5 | 6 | 7;
   boissons: string[];
   entree: boolean | null;
   plat: "chaud" | "sandwich" | null;
@@ -79,7 +79,7 @@ export function DejeunerCustomization({
     return (
       <ModalQuestion
         index={1}
-        total={6}
+        total={7}
         title="Quelles boissons souhaitez-vous ?"
         hint="Plusieurs choix possibles"
         onNext={next}
@@ -103,7 +103,7 @@ export function DejeunerCustomization({
     return (
       <ModalQuestion
         index={2}
-        total={6}
+        total={7}
         title="Souhaitez-vous une entrée ?"
         onPrev={prev}
         onNext={next}
@@ -121,7 +121,7 @@ export function DejeunerCustomization({
     return (
       <ModalQuestion
         index={3}
-        total={6}
+        total={7}
         title="Préférez-vous un plat chaud ou un sandwich ?"
         onPrev={prev}
         onNext={next}
@@ -139,7 +139,7 @@ export function DejeunerCustomization({
     return (
       <ModalQuestion
         index={4}
-        total={6}
+        total={7}
         title="Souhaitez-vous un dessert ?"
         onPrev={prev}
         onNext={() => {
@@ -163,7 +163,7 @@ export function DejeunerCustomization({
     return (
       <ModalQuestion
         index={5}
-        total={6}
+        total={7}
         title="Quel type de dessert ?"
         onPrev={prev}
         onNext={next}
@@ -178,31 +178,78 @@ export function DejeunerCustomization({
     );
   }
 
+  if (s.step === 6) {
+    return (
+      <ModalQuestion
+        index={6}
+        total={7}
+        title="Quel mode de service préférez-vous ?"
+        onPrev={() => setS({ ...s, step: s.dessert ? 5 : 4 })}
+        onNext={() => setS({ ...s, step: 7 })}
+        nextDisabled={s.serviceMode === null}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ServiceOption
+            title="Lunch box"
+            desc="Box individuelles à emporter"
+            selected={s.serviceMode === "lunch_box"}
+            onClick={() => setS({ ...s, serviceMode: "lunch_box" })}
+          />
+          <ServiceOption
+            title="À table"
+            desc="Service en salle, vaisselle incluse"
+            selected={s.serviceMode === "a_table"}
+            onClick={() => setS({ ...s, serviceMode: "a_table" })}
+          />
+        </div>
+      </ModalQuestion>
+    );
+  }
+
+  // Step 7 — récapitulatif dynamique avant validation finale
   return (
     <ModalQuestion
-      index={6}
-      total={6}
-      title="Quel mode de service préférez-vous ?"
-      onPrev={() => setS({ ...s, step: s.dessert ? 5 : 4 })}
+      index={7}
+      total={7}
+      title="Confirmez votre formule personnalisée"
+      hint="Revoyez vos choix avant de les ajouter à votre devis."
+      onPrev={() => setS({ ...s, step: 6 })}
       onNext={commit}
       nextLabel="Valider mes choix"
       isLast
-      nextDisabled={s.serviceMode === null}
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <ServiceOption
-          title="Lunch box"
-          desc="Box individuelles à emporter"
-          selected={s.serviceMode === "lunch_box"}
-          onClick={() => setS({ ...s, serviceMode: "lunch_box" })}
-        />
-        <ServiceOption
-          title="À table"
-          desc="Service en salle, vaisselle incluse"
-          selected={s.serviceMode === "a_table"}
-          onClick={() => setS({ ...s, serviceMode: "a_table" })}
-        />
-      </div>
+      <LiveRecap
+        rows={[
+          { label: "Boissons", value: s.boissons },
+          { label: "Entrée", value: s.entree ? "Oui" : "Non" },
+          {
+            label: "Plat",
+            value:
+              s.plat === "chaud"
+                ? "Plat chaud"
+                : s.plat === "sandwich"
+                ? "Sandwich"
+                : null,
+          },
+          {
+            label: "Dessert",
+            value: !s.dessert
+              ? "Non"
+              : s.dessertType === "gateau"
+              ? "Gâteau / Pâtisserie"
+              : s.dessertType === "fruit"
+              ? "Fruit"
+              : "Gâteau & fruit",
+          },
+          {
+            label: "Service",
+            value:
+              s.serviceMode === "a_table"
+                ? "À table — service en salle"
+                : "Lunch box — individuelles à emporter",
+          },
+        ]}
+      />
     </ModalQuestion>
   );
 }

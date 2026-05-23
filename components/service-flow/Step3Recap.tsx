@@ -242,7 +242,11 @@ function computeTotals(state: FlowState, service: ServiceSlug) {
     service === "stations-street-food" &&
     state.details?.service === "stations-street-food"
   ) {
-    const { subtotalHT } = streetfoodSubtotal(state.details.stations, state.guestCount);
+    const { subtotalHT } = streetfoodSubtotal(
+      state.details.stations,
+      state.guestCount,
+      state.details.multiPackId
+    );
     const t = totalsFromSubtotal(subtotalHT);
     return { unitPriceHT: null, ...t };
   }

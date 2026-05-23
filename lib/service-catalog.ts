@@ -99,8 +99,8 @@ export const services: ServiceMeta[] = [
     imageAlt: "Buffet de pause déjeuner pour entreprise",
     highlights: [
       "Lunch box individuelles ou service à table",
-      "Options entrée, plat chaud ou sandwich",
-      "Desserts variés au choix",
+      "Entrée, plat chaud ou sandwich au choix",
+      "Sélection variée de desserts maison",
       "Livraison fraîcheur garantie",
     ],
     minGuests: 10,
@@ -120,7 +120,7 @@ export const services: ServiceMeta[] = [
       "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1600&q=80",
     imageAlt: "Station street food avec chef en action",
     highlights: [
-      "7 stations au choix",
+      "7 stations solo + 4 packs multi-stations",
       "Animations culinaires en direct",
       "Pâtisseries, pizzas, burgers et plus",
       "Idéal pour événements 100+ invités",
@@ -428,12 +428,19 @@ export const dejeunerPacks: DejeunerPack[] = [
     name: "Pause Déjeuner Premium",
     badgeLabel: "Premium",
     entree: [
-      "Salade tunisienne, Salade russe, Salade de lentille, Salade Mechouia, Salade de riz (au choix)",
+      "Salade tunisienne",
+      "Salade russe",
+      "Salade de lentille",
+      "Salade Mechouia",
+      "Salade de riz",
     ],
     plat: [
-      "Couscous poulet, Nwasser poulet, Riz oriental poulet amande, Dwida poulet (au choix)",
+      "Couscous poulet",
+      "Nwasser poulet",
+      "Riz oriental poulet amande",
+      "Dwida poulet",
     ],
-    dessert: ["Salade de fruit ou gâteau"],
+    dessert: ["Salade de fruit", "Gâteau"],
     boisson: ["Eau"],
     lbPrix: [24.5, 24, 23.5, 22.5],
     tblPrix: null,
@@ -443,13 +450,26 @@ export const dejeunerPacks: DejeunerPack[] = [
     name: "Pause Déjeuner Signature",
     badgeLabel: "Signature",
     entree: [
-      "Salade César, Salade Niçoise, Salade Burrata, Salade de Riz, Salade de pâtes (au choix)",
+      "Salade César",
+      "Salade Niçoise",
+      "Salade Burrata",
+      "Salade de Riz",
+      "Salade de pâtes",
     ],
     plat: [
-      "Émincé de bœuf & riz aux légumes, Couscous à l'agneau, Couscous au poisson, Penne Poulet Pesto, Poisson Pannée & pomme de terre au four, Cordon bleu & légumes sautés (au choix)",
+      "Émincé de bœuf & riz aux légumes",
+      "Couscous à l'agneau",
+      "Couscous au poisson",
+      "Penne Poulet Pesto",
+      "Poisson Pannée & pomme de terre au four",
+      "Cordon bleu & légumes sautés",
     ],
     dessert: [
-      "Verrine de cheesecake, Salade de fruits, Gâteau au chocolat, Tiramisu, Mousse au Chocolat (au choix)",
+      "Verrine de cheesecake",
+      "Salade de fruits",
+      "Gâteau au chocolat",
+      "Tiramisu",
+      "Mousse au Chocolat",
     ],
     boisson: ["Eau"],
     lbPrix: [37.5, 36.5, 35.5, 34.5],
@@ -541,6 +561,70 @@ export const streetfoodStations: StreetfoodStation[] = [
 
 export const getStation = (id: string) =>
   streetfoodStations.find((s) => s.id === id);
+
+/**
+ * Multi-station "packs" — pre-bundled combinations of 2–4 stations at a fixed
+ * per-person price. Ported from the source HTML (duoStations). Prices follow
+ * the same 2-bracket logic as solo stations (100-149 / 150+ guests).
+ */
+export type StreetfoodMultiPack = {
+  id: string;
+  name: string;
+  items: string[];
+  prix: [number, number]; // 100-149 / 150+ TND HT per person
+};
+
+export const streetfoodMultiPacks: StreetfoodMultiPack[] = [
+  {
+    id: "duo-gourmand",
+    name: "Pack Duo Gourmand",
+    items: ["Station Shawarma Poulet", "Station Pâtes Puttanesca"],
+    prix: [16.5, 15],
+  },
+  {
+    id: "multi-trio",
+    name: "Pack Trio",
+    items: [
+      "Station Shawarma Poulet",
+      "Station Fricassé Thon",
+      "Station Pizza 4 Fromages",
+    ],
+    prix: [21, 18.5],
+  },
+  {
+    id: "duo-creatif",
+    name: "Pack Duo Créatif",
+    items: ["Station Burger Munchies", "Station Crêpes Thon Fromage"],
+    prix: [27, 25],
+  },
+  {
+    id: "multi-quatuor",
+    name: "Pack Quatuor",
+    items: [
+      "Station Shawarma Poulet",
+      "Station Sandwich Effiloché de Bœuf",
+      "Station Pizza Thon",
+      "Station Crêpes Nutella",
+    ],
+    prix: [37.5, 34],
+  },
+];
+
+export const getStreetfoodMultiPack = (id: string) =>
+  streetfoodMultiPacks.find((p) => p.id === id);
+
+/**
+ * Multi-pack price lookup — 2 brackets matching STREETFOOD_BRACKETS.
+ * 100-149 guests → prix[0]; 150+ → prix[1].
+ */
+export function streetfoodMultiPackPricePerPerson(
+  packId: string,
+  guestCount: number
+): number | null {
+  const pack = getStreetfoodMultiPack(packId);
+  if (!pack) return null;
+  return guestCount < 150 ? pack.prix[0] : pack.prix[1];
+}
 
 /* ─── Helpers ─────────────────────────────────────────────────────── */
 

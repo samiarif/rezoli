@@ -2,12 +2,12 @@
 
 import * as React from "react";
 import type { FlowState, FlowAction } from "../state";
-import { ModalQuestion, OptionPill, PillGrid } from "./parts";
+import { ModalQuestion, OptionPill, PillGrid, LiveRecap } from "./parts";
 
 type Options = { boissons: string[]; sale: string[]; sucre: string[] };
 
 type LocalState = {
-  step: 1 | 2 | 3 | 4;
+  step: 1 | 2 | 3 | 4 | 5;
   boissons: string[];
   hasSale: boolean | null;
   sale: string[];
@@ -76,7 +76,7 @@ export function CafeCustomization({
     return (
       <ModalQuestion
         index={1}
-        total={4}
+        total={5}
         title="Quelles boissons souhaitez-vous ?"
         hint="Sélection multiple"
         onNext={() => setS({ ...s, step: 2 })}
@@ -100,7 +100,7 @@ export function CafeCustomization({
     return (
       <ModalQuestion
         index={2}
-        total={4}
+        total={5}
         title="Souhaitez-vous du salé ?"
         hint={s.hasSale ? "Choisissez vos pièces salées" : ""}
         onPrev={() => setS({ ...s, step: 1 })}
@@ -139,7 +139,7 @@ export function CafeCustomization({
     return (
       <ModalQuestion
         index={3}
-        total={4}
+        total={5}
         title="Souhaitez-vous du sucré ?"
         hint={s.hasSucre ? "Choisissez vos pièces sucrées" : ""}
         onPrev={() => setS({ ...s, step: 2 })}
@@ -174,30 +174,65 @@ export function CafeCustomization({
     );
   }
 
+  if (s.step === 4) {
+    return (
+      <ModalQuestion
+        index={4}
+        total={5}
+        title="Quelle option de service ?"
+        onPrev={() => setS({ ...s, step: 3 })}
+        onNext={() => setS({ ...s, step: 5 })}
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <ServiceOption
+            title="Sans service"
+            desc="Livraison avec matériel jetable"
+            selected={s.serviceMode === "sans"}
+            onClick={() => setS({ ...s, serviceMode: "sans" })}
+          />
+          <ServiceOption
+            title="Avec service"
+            desc="Livraison + serveur sur place"
+            selected={s.serviceMode === "avec"}
+            onClick={() => setS({ ...s, serviceMode: "avec" })}
+          />
+        </div>
+      </ModalQuestion>
+    );
+  }
+
+  // Step 5 — récapitulatif dynamique avant validation finale
   return (
     <ModalQuestion
-      index={4}
-      total={4}
-      title="Quelle option de service ?"
-      onPrev={() => setS({ ...s, step: 3 })}
+      index={5}
+      total={5}
+      title="Confirmez votre formule personnalisée"
+      hint="Revoyez vos choix avant de les ajouter à votre devis."
+      onPrev={() => setS({ ...s, step: 4 })}
       onNext={commit}
       nextLabel="Valider mes choix"
       isLast
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <ServiceOption
-          title="Sans service"
-          desc="Livraison avec matériel jetable"
-          selected={s.serviceMode === "sans"}
-          onClick={() => setS({ ...s, serviceMode: "sans" })}
-        />
-        <ServiceOption
-          title="Avec service"
-          desc="Livraison + serveur sur place"
-          selected={s.serviceMode === "avec"}
-          onClick={() => setS({ ...s, serviceMode: "avec" })}
-        />
-      </div>
+      <LiveRecap
+        rows={[
+          { label: "Boissons", value: s.boissons },
+          {
+            label: "Pièces salées",
+            value: s.hasSale ? s.sale : null,
+          },
+          {
+            label: "Pièces sucrées",
+            value: s.hasSucre ? s.sucre : null,
+          },
+          {
+            label: "Service",
+            value:
+              s.serviceMode === "avec"
+                ? "Avec service — serveur sur place"
+                : "Sans service — livraison + matériel jetable",
+          },
+        ]}
+      />
     </ModalQuestion>
   );
 }

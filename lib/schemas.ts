@@ -42,6 +42,11 @@ export const dejeunerDetailsSchema = z.object({
   dessert: z.boolean(),
   dessertType: z.enum(["gateau", "fruit", "les_deux"]).optional(),
   serviceMode: z.enum(["lunch_box", "a_table"]),
+  // Pre-built formula picks (entrée / plat / dessert chosen from the formula's option list).
+  // Empty strings allowed so a formula with a single fixed option doesn't require a pick.
+  selectedEntree: z.string().optional(),
+  selectedPlat: z.string().optional(),
+  selectedDessert: z.string().optional(),
 });
 
 export const stationSelectionSchema = z.object({
@@ -53,8 +58,16 @@ export const stationSelectionSchema = z.object({
 export const streetfoodDetailsSchema = z.object({
   service: z.literal("stations-street-food"),
   formulaId: z.literal("personnalise"),
-  stations: z.array(stationSelectionSchema).min(1, "Sélectionnez au moins une station"),
-});
+  stations: z.array(stationSelectionSchema),
+  /**
+   * Optional multi-station pack ID — when set, replaces the individual stations
+   * with a fixed bundle priced per person from `streetfoodMultiPacks`.
+   */
+  multiPackId: z.string().optional(),
+}).refine(
+  (val) => val.stations.length > 0 || !!val.multiPackId,
+  { message: "Sélectionnez au moins une station ou un pack multi-stations", path: ["stations"] }
+);
 
 export const eventPackDetailsSchema = z.object({
   service: z.literal("event-pack"),

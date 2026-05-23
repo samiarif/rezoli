@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -122,8 +123,8 @@ function CocktailPicker({
             unit={unit}
             inclusions={[
               `Boissons : ${p.boissons.join(", ")}`,
-              `${p.nbSale} pièces salées au choix (${p.sale.length} options)`,
-              `${p.nbSucre} pièces sucrées au choix (${p.sucre.length} options)`,
+              `${p.nbSale} pièces salées par personne — ${p.sale.join(", ")}`,
+              `${p.nbSucre} pièces sucrées par personne — ${p.sucre.join(", ")}`,
             ]}
           />
         );
@@ -190,40 +191,226 @@ function DejeunerPicker({
 }) {
   const nb = state.guestCount;
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {packs.map((p) => {
-        const unit = dejeunerPricePerPerson(p.id, nb, "lunch_box");
-        const inclusions = [
-          p.entree ? `Entrée : ${p.entree.join(", ")}` : null,
-          `Plat : ${p.plat.join(", ")}`,
-          `Dessert : ${p.dessert.join(", ")}`,
-          p.boisson ? `Boisson : ${p.boisson.join(", ")}` : null,
-        ].filter(Boolean) as string[];
-        return (
-          <PackCard
-            key={p.id}
-            selected={state.formulaId === p.id}
-            onClick={() => {
-              const details: QuoteDetails = {
-                service: "pauses-dejeuner",
-                formulaId: p.id,
-                boissons: p.boisson ?? [],
-                entree: !!p.entree,
-                plat: "chaud",
-                dessert: !!p.dessert,
-                dessertType: "les_deux",
-                serviceMode: "lunch_box",
-              };
-              dispatch({ type: "PICK_PREBUILT", formulaId: p.id, details });
-            }}
-            badge={p.badgeLabel}
-            name={p.name}
-            unit={unit}
-            inclusions={inclusions}
-          />
-        );
-      })}
+    <div className="grid gap-4">
+      {packs.map((p) => (
+        <DejeunerCard
+          key={p.id}
+          pack={p}
+          guestCount={nb}
+          selected={state.formulaId === p.id}
+          existing={
+            state.details?.service === "pauses-dejeuner" &&
+            state.details.formulaId === p.id
+              ? state.details
+              : null
+          }
+          onSelect={(picks) => {
+            const details: QuoteDetails = {
+              service: "pauses-dejeuner",
+              formulaId: p.id,
+              boissons: p.boisson ?? [],
+              entree: !!p.entree,
+              plat: "chaud",
+              dessert: !!p.dessert,
+              dessertType: "les_deux",
+              serviceMode: "lunch_box",
+              selectedEntree: picks.entree,
+              selectedPlat: picks.plat,
+              selectedDessert: picks.dessert,
+            };
+            dispatch({ type: "PICK_PREBUILT", formulaId: p.id, details });
+          }}
+        />
+      ))}
     </div>
+  );
+}
+
+/**
+ * Pauses Déjeuner formula card with embedded radio pickers for entrée / plat /
+ * dessert. When a formula has a single option for a course, the picker is
+ * skipped. The "Sélectionner cette formule" button is disabled until every
+ * multi-option course has been chosen.
+ */
+function DejeunerCard({
+  pack,
+  guestCount,
+  selected,
+  existing,
+  onSelect,
+}: {
+  pack: DejeunerPack;
+  guestCount: number;
+  selected: boolean;
+  existing: Extract<QuoteDetails, { service: "pauses-dejeuner" }> | null;
+  onSelect: (picks: {
+    entree?: string;
+    plat?: string;
+    dessert?: string;
+  }) => void;
+}) {
+  const unit = dejeunerPricePerPerson(pack.id, guestCount, "lunch_box");
+  const needsEntreePick = !!pack.entree && pack.entree.length > 1;
+  const needsPlatPick = pack.plat.length > 1;
+  const needsDessertPick = pack.dessert.length > 1;
+
+  const [entree, setEntree] = React.useState<string | undefined>(
+    existing?.selectedEntree ??
+      (pack.entree && pack.entree.length === 1 ? pack.entree[0] : undefined)
+  );
+  const [plat, setPlat] = React.useState<string | undefined>(
+    existing?.selectedPlat ??
+      (pack.plat.length === 1 ? pack.plat[0] : undefined)
+  );
+  const [dessert, setDessert] = React.useState<string | undefined>(
+    existing?.selectedDessert ??
+      (pack.dessert.length === 1 ? pack.dessert[0] : undefined)
+  );
+
+  const ready =
+    (!needsEntreePick || !!entree) &&
+    (!needsPlatPick || !!plat) &&
+    (!needsDessertPick || !!dessert);
+
+  return (
+    <article
+      className={cn(
+        "rounded-xl bg-background ring-1 p-5 transition-all",
+        selected
+          ? "ring-2 ring-teal-500 shadow-md"
+          : "ring-border hover:ring-teal-500/40"
+      )}
+    >
+      <header className="flex items-start justify-between gap-4 mb-4">
+        <div>
+          <p className="eyebrow">{pack.badgeLabel}</p>
+          <h3 className="font-display text-xl font-semibold mt-1">
+            {pack.name}
+          </h3>
+        </div>
+        {unit != null && (
+          <p className="text-right">
+            <span className="font-display text-2xl font-bold text-teal-700">
+              {formatTND(unit)}
+            </span>
+            <span className="block text-[11px] text-muted-foreground">
+              / pers. HT
+            </span>
+          </p>
+        )}
+      </header>
+
+      <div className="space-y-4">
+        {pack.entree && pack.entree.length > 0 && (
+          <CourseChoice
+            title="Entrée"
+            options={pack.entree}
+            value={entree}
+            onChange={setEntree}
+          />
+        )}
+        <CourseChoice
+          title="Plat"
+          options={pack.plat}
+          value={plat}
+          onChange={setPlat}
+        />
+        <CourseChoice
+          title="Dessert"
+          options={pack.dessert}
+          value={dessert}
+          onChange={setDessert}
+        />
+        {pack.boisson && pack.boisson.length > 0 && (
+          <p className="text-xs text-muted-foreground">
+            <span className="font-medium text-neutral-700">Boisson</span>{" "}
+            incluse : {pack.boisson.join(", ")}
+          </p>
+        )}
+      </div>
+
+      <div className="mt-5 flex justify-end">
+        <Button
+          variant={selected ? "outline" : "solid"}
+          size="sm"
+          disabled={!ready}
+          onClick={() => onSelect({ entree, plat, dessert })}
+        >
+          {selected ? (
+            <>
+              <Check className="size-4" /> Formule sélectionnée
+            </>
+          ) : (
+            "Sélectionner cette formule"
+          )}
+        </Button>
+      </div>
+    </article>
+  );
+}
+
+function CourseChoice({
+  title,
+  options,
+  value,
+  onChange,
+}: {
+  title: string;
+  options: string[];
+  value: string | undefined;
+  onChange: (v: string) => void;
+}) {
+  const singleOption = options.length === 1;
+  return (
+    <fieldset>
+      <legend className="text-sm font-medium text-neutral-800">
+        {title}
+        {!singleOption && (
+          <span className="ml-1 text-xs text-muted-foreground">
+            ({options.length} options — choisissez-en une)
+          </span>
+        )}
+      </legend>
+      {singleOption ? (
+        <p className="mt-1 text-sm text-muted-foreground">{options[0]}</p>
+      ) : (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {options.map((opt) => {
+            const checked = value === opt;
+            return (
+              <label
+                key={opt}
+                className={cn(
+                  "inline-flex items-center gap-2 rounded-md px-3 py-1.5 text-sm ring-1 transition-colors cursor-pointer",
+                  checked
+                    ? "bg-teal-50 ring-teal-500 text-teal-900 ring-2"
+                    : "bg-background ring-border hover:ring-teal-500/30"
+                )}
+              >
+                <input
+                  type="radio"
+                  className="sr-only"
+                  checked={checked}
+                  onChange={() => onChange(opt)}
+                  name={`${title}-${options[0]}`}
+                />
+                <span
+                  className={cn(
+                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors",
+                    checked
+                      ? "bg-teal-500 text-white"
+                      : "border-2 border-neutral-300"
+                  )}
+                >
+                  {checked && <Check className="size-2.5" strokeWidth={3} />}
+                </span>
+                <span>{opt}</span>
+              </label>
+            );
+          })}
+        </div>
+      )}
+    </fieldset>
   );
 }
 

@@ -1,6 +1,10 @@
 import { Check } from "lucide-react";
 import type { QuoteDetails } from "@/lib/schemas";
-import { getStation } from "@/lib/service-catalog";
+import {
+  getStation,
+  getStreetfoodMultiPack,
+  streetfoodMultiPackPricePerPerson,
+} from "@/lib/service-catalog";
 import { formatTND } from "@/lib/utils";
 import { streetfoodLinePrice } from "@/lib/service-pricing";
 import { getPackCategory } from "@/lib/event-packs-catalog";
@@ -41,27 +45,54 @@ export function renderDetailsBlocks(details: QuoteDetails) {
         <>
           <Row label="Formule">{formulaLabel(details.formulaId)}</Row>
           <Row label="Boissons">{details.boissons.join(", ") || "—"}</Row>
-          <Row label="Entrée">{details.entree ? "Oui" : "Non"}</Row>
-          <Row label="Plat">
-            {details.plat === "chaud" ? "Plat chaud" : "Sandwich"}
-          </Row>
-          <Row label="Dessert">
-            {details.dessert
-              ? details.dessertType === "gateau"
-                ? "Oui — Gâteau / Pâtisserie"
-                : details.dessertType === "fruit"
-                ? "Oui — Fruit"
-                : "Oui — Les deux"
-              : "Non"}
-          </Row>
+          {details.selectedEntree ? (
+            <Row label="Entrée">{details.selectedEntree}</Row>
+          ) : (
+            <Row label="Entrée">{details.entree ? "Oui" : "Non"}</Row>
+          )}
+          {details.selectedPlat ? (
+            <Row label="Plat">{details.selectedPlat}</Row>
+          ) : (
+            <Row label="Plat">
+              {details.plat === "chaud" ? "Plat chaud" : "Sandwich"}
+            </Row>
+          )}
+          {details.selectedDessert ? (
+            <Row label="Dessert">{details.selectedDessert}</Row>
+          ) : (
+            <Row label="Dessert">
+              {details.dessert
+                ? details.dessertType === "gateau"
+                  ? "Oui — Gâteau / Pâtisserie"
+                  : details.dessertType === "fruit"
+                  ? "Oui — Fruit"
+                  : "Oui — Les deux"
+                : "Non"}
+            </Row>
+          )}
           <Row label="Service">
             {details.serviceMode === "a_table" ? "À table" : "Lunch box"}
           </Row>
         </>
       );
-    case "stations-street-food":
+    case "stations-street-food": {
+      const multiPack = details.multiPackId
+        ? getStreetfoodMultiPack(details.multiPackId)
+        : null;
       return (
         <ul className="space-y-1.5">
+          {multiPack && (
+            <li className="flex gap-2 text-sm">
+              <Check className="size-4 text-amber-600 mt-0.5 shrink-0" />
+              <span>
+                <strong>{multiPack.name}</strong>
+                <span className="text-muted-foreground">
+                  {" "}
+                  · pack multi-stations ({multiPack.items.length} stations)
+                </span>
+              </span>
+            </li>
+          )}
           {details.stations.map((s, idx) => {
             const meta = getStation(s.stationId);
             return (
@@ -80,6 +111,7 @@ export function renderDetailsBlocks(details: QuoteDetails) {
           })}
         </ul>
       );
+    }
     case "event-pack": {
       const cat = getPackCategory(details.packCategory);
       const optionLabels = (details.options || []).map((id) => {
@@ -158,27 +190,45 @@ export function renderDetailsAsText(details: QuoteDetails, nb: number): string {
       return [
         `Formule : ${formulaLabel(details.formulaId)}`,
         `Boissons : ${details.boissons.join(", ") || "—"}`,
-        `Entrée : ${details.entree ? "Oui" : "Non"}`,
-        `Plat : ${details.plat === "chaud" ? "Plat chaud" : "Sandwich"}`,
+        `Entrée : ${
+          details.selectedEntree ?? (details.entree ? "Oui" : "Non")
+        }`,
+        `Plat : ${
+          details.selectedPlat ??
+          (details.plat === "chaud" ? "Plat chaud" : "Sandwich")
+        }`,
         `Dessert : ${
-          details.dessert
+          details.selectedDessert ??
+          (details.dessert
             ? details.dessertType === "gateau"
               ? "Oui — Gâteau / Pâtisserie"
               : details.dessertType === "fruit"
               ? "Oui — Fruit"
               : "Oui — Les deux"
-            : "Non"
+            : "Non")
         }`,
         `Service : ${details.serviceMode === "a_table" ? "À table" : "Lunch box"}`,
       ].join("\n");
-    case "stations-street-food":
-      return details.stations
-        .map((s) => {
-          const meta = getStation(s.stationId);
-          const line = streetfoodLinePrice(s, nb);
-          return `• ${meta?.name ?? s.stationId}${s.variant ? " — " + s.variant : ""} · ${s.piecesPerPerson} pièce(s)/pers. · ${line ? formatTND(line.total) : "—"} HT`;
-        })
-        .join("\n");
+    case "stations-street-food": {
+      const lines: string[] = [];
+      if (details.multiPackId) {
+        const mp = getStreetfoodMultiPack(details.multiPackId);
+        const unit = streetfoodMultiPackPricePerPerson(details.multiPackId, nb);
+        if (mp) {
+          lines.push(
+            `• ${mp.name} (pack multi-stations) · ${unit != null ? formatTND(unit * nb) : "—"} HT`
+          );
+        }
+      }
+      for (const s of details.stations) {
+        const meta = getStation(s.stationId);
+        const line = streetfoodLinePrice(s, nb);
+        lines.push(
+          `• ${meta?.name ?? s.stationId}${s.variant ? " — " + s.variant : ""} · ${s.piecesPerPerson} pièce(s)/pers. · ${line ? formatTND(line.total) : "—"} HT`
+        );
+      }
+      return lines.join("\n");
+    }
     case "event-pack": {
       const cat = getPackCategory(details.packCategory);
       const optionLabels = (details.options || [])
