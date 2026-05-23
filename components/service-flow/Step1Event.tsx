@@ -9,15 +9,14 @@ import { Input, Label } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FieldError } from "@/components/ui/field-error";
 import type { FlowState, FlowAction } from "./state";
-import { isStep1Valid, isContactValid } from "./state";
+import {
+  isStep1Valid,
+  isContactValid,
+  minEventDateISO,
+  eventDateError,
+} from "./state";
 import { pushStep1Lead } from "@/app/(marketing)/nos-services/[slug]/actions";
 import type { ServiceSlug } from "@/lib/service-catalog";
-
-const today = () => {
-  const d = new Date();
-  d.setDate(d.getDate() + 2);
-  return d.toISOString().split("T")[0];
-};
 
 export function Step1Event({
   state,
@@ -40,10 +39,12 @@ export function Step1Event({
   const valid = isStep1Valid(state, minGuests);
   const contactValid = isContactValid(state);
   const isBlocked =
-    state.eventDate && (blockedDates ?? []).includes(state.eventDate);
+    !!state.eventDate && (blockedDates ?? []).includes(state.eventDate);
+  const dateError = eventDateError(state.eventDate);
+  const minDate = React.useMemo(() => minEventDateISO(), []);
 
   async function handleContinue() {
-    if (!valid || isBlocked) return;
+    if (!valid || isBlocked || dateError) return;
     setSubmitting(true);
     try {
       const res = await pushStep1Lead({
@@ -164,14 +165,31 @@ export function Step1Event({
             <Input
               id="event-date"
               type="date"
-              min={today()}
+              min={minDate}
               value={state.eventDate}
               onChange={(e) =>
                 dispatch({ type: "SET_EVENT", patch: { eventDate: e.target.value } })
               }
-              aria-invalid={!!isBlocked}
+              aria-invalid={!!isBlocked || !!dateError}
+              aria-describedby="event-date-help"
             />
-            {isBlocked && (
+            <p
+              id="event-date-help"
+              className="mt-1.5 text-xs text-muted-foreground"
+            >
+              Délai minimum : 48&nbsp;heures avant l&apos;événement.
+            </p>
+            {dateError === "past" && (
+              <p className="mt-1.5 text-xs text-danger">
+                Date dans le passé&nbsp;: veuillez choisir une date future.
+              </p>
+            )}
+            {dateError === "too-soon" && (
+              <p className="mt-1.5 text-xs text-danger">
+                Trop proche&nbsp;: la date doit être au moins 48&nbsp;h après aujourd&apos;hui.
+              </p>
+            )}
+            {isBlocked && !dateError && (
               <p className="mt-1.5 text-xs text-danger">
                 Cette date n&apos;est plus disponible. Choisissez une autre date.
               </p>
@@ -262,7 +280,7 @@ export function Step1Event({
         <Button
           variant="solid"
           size="lg"
-          disabled={!valid || !!isBlocked || submitting}
+          disabled={!valid || !!isBlocked || !!dateError || submitting}
           onClick={handleContinue}
         >
           {submitting ? "…" : "Continuer"}

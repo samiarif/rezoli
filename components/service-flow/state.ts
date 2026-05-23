@@ -118,10 +118,43 @@ export function isContactValid(s: FlowState): boolean {
   );
 }
 
+/**
+ * Minimum event date is +48h from now (rolled forward to start-of-day).
+ * Returned as `YYYY-MM-DD` for direct use in <input type="date" min={...}>.
+ */
+export function minEventDateISO(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 2);
+  d.setHours(0, 0, 0, 0);
+  return d.toISOString().split("T")[0];
+}
+
+/**
+ * Validates the event date string against the +48h rule.
+ * Empty string returns `null` (no error to show yet).
+ * `"past"` → date is in the past; `"too-soon"` → within 48h.
+ */
+export function eventDateError(
+  eventDate: string
+): "past" | "too-soon" | null {
+  if (!eventDate) return null;
+  const parsed = new Date(eventDate + "T00:00:00");
+  if (Number.isNaN(parsed.getTime())) return "past";
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  if (parsed.getTime() < today.getTime()) return "past";
+  const min = new Date();
+  min.setDate(min.getDate() + 2);
+  min.setHours(0, 0, 0, 0);
+  if (parsed.getTime() < min.getTime()) return "too-soon";
+  return null;
+}
+
 export function isStep1Valid(s: FlowState, minGuests: number): boolean {
   return (
     isContactValid(s) &&
     !!s.eventDate &&
+    eventDateError(s.eventDate) === null &&
     !!s.eventTime &&
     s.location.trim().length >= 2 &&
     s.guestCount >= minGuests
