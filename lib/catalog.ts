@@ -51,27 +51,39 @@ export type Partner = {
   services: ServiceSlug[];
 };
 
+/**
+ * The 18 official enseignes partenaires, each with its logo under
+ * /public/partners. Categories and service associations are derived from the
+ * brand roster and the partner usage documented in our réalisations
+ * (e.g. King Shawarma + El Bio + Pizzagram on street-food events). A few
+ * category guesses are flagged inline and can be adjusted by the team.
+ */
 export const partners: Partner[] = [
-  // Cocktails dînatoires
-  { id: "vedge", name: "Vedge", category: "restaurant", services: ["cocktails-dinatoires", "pauses-cafe"] },
-  { id: "jutop", name: "Ju'Top", category: "restaurant", services: ["cocktails-dinatoires", "pauses-cafe"] },
-  { id: "gourmandise", name: "Gourmandise", category: "patisserie", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  // ── Traiteurs ──
+  { id: "best-food-catering", name: "Best Food", logo: "/partners/best-food-catering.jpg", category: "traiteur", services: ["pauses-dejeuner", "cocktails-dinatoires"] },
+  { id: "fusion-traiteur", name: "Fusion Traiteur", logo: "/partners/fusion-traiteur.jpg", category: "traiteur", services: ["pauses-dejeuner", "cocktails-dinatoires"] },
+  { id: "traiteur-ben-yedder", name: "Traiteur Ben Yedder", logo: "/partners/traiteur-ben-yedder.jpg", category: "traiteur", services: ["pauses-cafe", "pauses-dejeuner"] },
+  { id: "mme-fathallah", name: "Mme Fathallah", logo: "/partners/mme-fathallah.png", category: "traiteur", services: ["pauses-dejeuner", "cocktails-dinatoires"] }, // category guess
 
-  // Pauses café (additional)
-  { id: "symphonie-gourmande", name: "Symphonie Gourmande", category: "patisserie", services: ["pauses-cafe"] },
-  { id: "traiteur-ben-yedder", name: "Traiteur Ben Yedder", category: "traiteur", services: ["pauses-cafe", "pauses-dejeuner"] },
+  // ── Pâtisseries ──
+  { id: "gourmandise", name: "Gourmandise", logo: "/partners/gourmandise.png", category: "patisserie", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "symphonie-gourmande", name: "Symphonie Gourmande", logo: "/partners/symphonie-gourmande.jpg", category: "patisserie", services: ["pauses-cafe"] },
+  { id: "masmoudi-events", name: "Masmoudi Events", logo: "/partners/masmoudi-events.jpg", category: "patisserie", services: ["cocktails-dinatoires", "pauses-cafe"] }, // category guess
 
-  // Pauses déjeuner
-  { id: "chef-amine", name: "Chef Amine", category: "traiteur", services: ["pauses-dejeuner"] },
-  { id: "best-food-catering", name: "Best Food Catering", category: "traiteur", services: ["pauses-dejeuner"] },
+  // ── Restaurants ──
+  { id: "vedge", name: "Vedge", logo: "/partners/vedge.jpg", category: "restaurant", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "jutop", name: "Ju'Top", logo: "/partners/jutop.jpg", category: "restaurant", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "le-fumoir", name: "Le Fumoir", logo: "/partners/le-fumoir.jpg", category: "restaurant", services: ["stations-street-food", "cocktails-dinatoires"] },
+  { id: "magenta", name: "Magenta", logo: "/partners/magenta.jpg", category: "restaurant", services: ["cocktails-dinatoires"] }, // category guess
+  { id: "me-gusta", name: "Me Gusta", logo: "/partners/me-gusta.jpg", category: "restaurant", services: ["cocktails-dinatoires"] }, // category guess
 
-  // Stations street-food
-  { id: "king-shawarma", name: "King Shawarma", category: "street-food", services: ["stations-street-food"] },
-  { id: "pizza-mizen", name: "Pizza Mizen", category: "street-food", services: ["stations-street-food"] },
-  { id: "pizzagram", name: "Pizzagram", category: "street-food", services: ["stations-street-food"] },
-  { id: "creperie-jouliano", name: "Crêperie Jouliano", category: "street-food", services: ["stations-street-food"] },
-  { id: "le-fumoir", name: "Le Fumoir", category: "restaurant", services: ["stations-street-food"] },
-  { id: "munchies", name: "Munchies", category: "street-food", services: ["stations-street-food"] },
+  // ── Street food ──
+  { id: "king-shawarma", name: "King Shawarma", logo: "/partners/king-shawarma.jpg", category: "street-food", services: ["stations-street-food"] },
+  { id: "pizza-mizen", name: "Pizza Mizen", logo: "/partners/pizza-mizen.jpg", category: "street-food", services: ["stations-street-food"] },
+  { id: "pizzagram", name: "Pizzagram", logo: "/partners/pizzagram.jpg", category: "street-food", services: ["stations-street-food"] },
+  { id: "creperie-jouliano", name: "Crêperie Jouliano", logo: "/partners/creperie-jouliano.jpg", category: "street-food", services: ["stations-street-food"] },
+  { id: "el-bio", name: "El Bio", logo: "/partners/el-bio.png", category: "street-food", services: ["stations-street-food"] },
+  { id: "taco-and-co", name: "Taco & Co", logo: "/partners/taco-and-co.jpg", category: "street-food", services: ["stations-street-food"] },
 ];
 
 export function partnersForService(slug: ServiceSlug): Partner[] {

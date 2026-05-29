@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { partners } from "@/lib/catalog";
 
 export function PartnerScroller({
@@ -25,9 +26,19 @@ export function PartnerScroller({
                 key={`${p.id}-${i}`}
                 className="flex shrink-0 items-center justify-center h-14 px-6 rounded-lg bg-background ring-1 ring-border shadow-xs"
               >
-                <span className="font-display text-lg font-semibold text-neutral-700">
-                  {p.name}
-                </span>
+                {p.logo ? (
+                  <Image
+                    src={p.logo}
+                    alt={p.name}
+                    width={140}
+                    height={48}
+                    className="h-9 w-auto object-contain"
+                  />
+                ) : (
+                  <span className="font-display text-lg font-semibold text-neutral-700">
+                    {p.name}
+                  </span>
+                )}
               </div>
             ))}
           </div>
