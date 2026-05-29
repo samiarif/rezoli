@@ -1,13 +1,18 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHero } from "@/components/sections/PageHero";
 import { CTASection } from "@/components/sections/CTASection";
-import { partners } from "@/lib/catalog";
+import { PartnersDirectory } from "@/components/sections/PartnersDirectory";
 import { BreadcrumbJsonLd } from "@/components/seo/JsonLd";
 import { SITE_URL } from "@/lib/utils";
+
+const STATS = [
+  { value: "15+", label: "Enseignes partenaires" },
+  { value: "4", label: "Catégories culinaires" },
+  { value: "100%", label: "Tunisien & local" },
+];
 
 export const metadata: Metadata = {
   title: "Nos partenaires",
@@ -42,6 +47,30 @@ export default function PartnersPage() {
         </Button>
       </PageHero>
 
+      {/* Key stats */}
+      <section className="py-12 md:py-16 border-b border-border">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <dl className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4">
+            {STATS.map((s) => (
+              <div
+                key={s.label}
+                className="rounded-2xl bg-background ring-1 ring-border shadow-xs p-6 text-center"
+              >
+                <dt className="sr-only">{s.label}</dt>
+                <dd>
+                  <span className="block font-display text-4xl md:text-5xl font-bold text-teal-700">
+                    {s.value}
+                  </span>
+                  <span className="mt-2 block text-sm text-muted-foreground">
+                    {s.label}
+                  </span>
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
       <section className="py-16 md:py-24">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <header className="mb-10 text-center">
@@ -52,34 +81,11 @@ export default function PartnersPage() {
             <p className="lede mt-4 text-pretty mx-auto max-w-2xl">
               Traiteurs, pâtisseries, restaurants et concepts food : chaque
               partenaire est sélectionné pour son exigence et son savoir-faire.
+              Filtrez par catégorie ci-dessous.
             </p>
           </header>
 
-          <ul className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-            {partners.map((p) => (
-              <li
-                key={p.id}
-                className="group flex flex-col items-center justify-center gap-3 h-32 rounded-xl bg-background ring-1 ring-border shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:ring-teal-500/30 transition-all px-4 py-3"
-              >
-                {p.logo ? (
-                  <Image
-                    src={p.logo}
-                    alt={p.name}
-                    width={180}
-                    height={80}
-                    className="max-h-14 w-auto object-contain"
-                  />
-                ) : (
-                  <span className="font-display text-base font-semibold text-neutral-800 text-center">
-                    {p.name}
-                  </span>
-                )}
-                <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-                  Partenaire culinaire
-                </span>
-              </li>
-            ))}
-          </ul>
+          <PartnersDirectory />
         </div>
       </section>
 

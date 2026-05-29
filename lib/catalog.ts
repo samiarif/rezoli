@@ -12,9 +12,30 @@ export type { ServiceSlug, ServiceMeta as Service } from "./service-catalog";
 /* ─── Partners ───────────────────────────────────────────────────── */
 
 /**
+ * Culinary partner categories — used by the filter on /nos-partenaires.
+ * The 4 categories back the "4 Catégories culinaires" stat.
+ */
+export type PartnerCategory =
+  | "traiteur"
+  | "patisserie"
+  | "street-food"
+  | "restaurant";
+
+export const PARTNER_CATEGORIES: Array<{
+  id: PartnerCategory;
+  label: string;
+}> = [
+  { id: "traiteur", label: "Traiteurs" },
+  { id: "patisserie", label: "Pâtisseries" },
+  { id: "street-food", label: "Street food" },
+  { id: "restaurant", label: "Restaurants" },
+];
+
+/**
  * Culinary partners — traiteurs, pâtisseries, restaurants, food concepts.
  * Each partner is scoped to one or more services so they can be surfaced on
- * the matching service detail pages (bottom of /nos-services/[slug]).
+ * the matching service detail pages (bottom of /nos-services/[slug]), and
+ * carries a single culinary `category` used by the partners-page filter.
  *
  * `logo` is an optional path under /public (e.g. "/partners/vedge.png").
  * When absent, the UI renders an elegant text capsule.
@@ -24,31 +45,33 @@ export type Partner = {
   name: string;
   /** Optional logo path under /public — UI falls back to a text capsule when absent. */
   logo?: string;
+  /** Culinary category — drives the filter on /nos-partenaires. */
+  category: PartnerCategory;
   /** Services this partner is associated with (used to filter the per-service section). */
   services: ServiceSlug[];
 };
 
 export const partners: Partner[] = [
   // Cocktails dînatoires
-  { id: "vedge", name: "Vedge", services: ["cocktails-dinatoires", "pauses-cafe"] },
-  { id: "jutop", name: "Ju'Top", services: ["cocktails-dinatoires", "pauses-cafe"] },
-  { id: "gourmandise", name: "Gourmandise", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "vedge", name: "Vedge", category: "restaurant", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "jutop", name: "Ju'Top", category: "restaurant", services: ["cocktails-dinatoires", "pauses-cafe"] },
+  { id: "gourmandise", name: "Gourmandise", category: "patisserie", services: ["cocktails-dinatoires", "pauses-cafe"] },
 
   // Pauses café (additional)
-  { id: "symphonie-gourmande", name: "Symphonie Gourmande", services: ["pauses-cafe"] },
-  { id: "traiteur-ben-yedder", name: "Traiteur Ben Yedder", services: ["pauses-cafe", "pauses-dejeuner"] },
+  { id: "symphonie-gourmande", name: "Symphonie Gourmande", category: "patisserie", services: ["pauses-cafe"] },
+  { id: "traiteur-ben-yedder", name: "Traiteur Ben Yedder", category: "traiteur", services: ["pauses-cafe", "pauses-dejeuner"] },
 
   // Pauses déjeuner
-  { id: "chef-amine", name: "Chef Amine", services: ["pauses-dejeuner"] },
-  { id: "best-food-catering", name: "Best Food Catering", services: ["pauses-dejeuner"] },
+  { id: "chef-amine", name: "Chef Amine", category: "traiteur", services: ["pauses-dejeuner"] },
+  { id: "best-food-catering", name: "Best Food Catering", category: "traiteur", services: ["pauses-dejeuner"] },
 
   // Stations street-food
-  { id: "king-shawarma", name: "King Shawarma", services: ["stations-street-food"] },
-  { id: "pizza-mizen", name: "Pizza Mizen", services: ["stations-street-food"] },
-  { id: "pizzagram", name: "Pizzagram", services: ["stations-street-food"] },
-  { id: "creperie-jouliano", name: "Crêperie Jouliano", services: ["stations-street-food"] },
-  { id: "le-fumoir", name: "Le Fumoir", services: ["stations-street-food"] },
-  { id: "munchies", name: "Munchies", services: ["stations-street-food"] },
+  { id: "king-shawarma", name: "King Shawarma", category: "street-food", services: ["stations-street-food"] },
+  { id: "pizza-mizen", name: "Pizza Mizen", category: "street-food", services: ["stations-street-food"] },
+  { id: "pizzagram", name: "Pizzagram", category: "street-food", services: ["stations-street-food"] },
+  { id: "creperie-jouliano", name: "Crêperie Jouliano", category: "street-food", services: ["stations-street-food"] },
+  { id: "le-fumoir", name: "Le Fumoir", category: "restaurant", services: ["stations-street-food"] },
+  { id: "munchies", name: "Munchies", category: "street-food", services: ["stations-street-food"] },
 ];
 
 export function partnersForService(slug: ServiceSlug): Partner[] {
