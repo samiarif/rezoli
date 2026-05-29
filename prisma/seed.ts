@@ -2,7 +2,7 @@
  * Seed the DB from the in-code catalog files. Idempotent (upsert).
  * Run via: pnpm db:seed
  */
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import {
   services as codeServices,
   cocktailPacks,
@@ -14,6 +14,10 @@ import {
   dejeunerOptions,
 } from "../lib/service-catalog";
 import { eventPackCategories as codePackCats } from "../lib/event-packs-catalog";
+import {
+  REZOLI_BLOG_POSTS,
+  REZOLI_REALISATIONS,
+} from "../lib/content-fixtures";
 
 const prisma = new PrismaClient();
 
@@ -279,6 +283,74 @@ async function main() {
         },
       });
     }
+  }
+
+  console.log("[seed] blog posts…");
+  for (const b of REZOLI_BLOG_POSTS) {
+    await prisma.blogPost.upsert({
+      where: { slug: b.slug },
+      create: {
+        slug: b.slug,
+        title: b.title,
+        excerpt: b.excerpt,
+        coverImageUrl: null,
+        content: b.content as Prisma.InputJsonValue,
+        tags: b.tags,
+        status: "PUBLISHED",
+        publishedAt: b.publishedAt,
+        seoTitle: b.seoTitle,
+        seoDescription: b.seoDescription,
+      },
+      update: {
+        title: b.title,
+        excerpt: b.excerpt,
+        content: b.content as Prisma.InputJsonValue,
+        tags: b.tags,
+        status: "PUBLISHED",
+        publishedAt: b.publishedAt,
+        seoTitle: b.seoTitle,
+        seoDescription: b.seoDescription,
+      },
+    });
+  }
+
+  console.log("[seed] réalisations…");
+  for (const r of REZOLI_REALISATIONS) {
+    await prisma.realisation.upsert({
+      where: { slug: r.slug },
+      create: {
+        slug: r.slug,
+        title: r.title,
+        eventType: r.eventType,
+        clientName: r.clientName,
+        date: r.date,
+        location: r.location,
+        guestCount: r.guestCount,
+        gallery: [],
+        shortPitch: r.shortPitch,
+        longContent: r.longContent as Prisma.InputJsonValue,
+        outcomes: r.outcomes as unknown as Prisma.InputJsonValue,
+        status: "PUBLISHED",
+        publishedAt: r.date,
+        featured: r.featured,
+        order: r.order,
+      },
+      update: {
+        title: r.title,
+        eventType: r.eventType,
+        clientName: r.clientName,
+        date: r.date,
+        location: r.location,
+        guestCount: r.guestCount,
+        shortPitch: r.shortPitch,
+        longContent: r.longContent as Prisma.InputJsonValue,
+        outcomes: r.outcomes as unknown as Prisma.InputJsonValue,
+        status: "PUBLISHED",
+        publishedAt: r.date,
+        featured: r.featured,
+        order: r.order,
+      },
+    });
   }
 
   console.log("[seed] done.");

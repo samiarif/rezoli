@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight, Users, MapPin, Calendar } from "lucide-react";
+import { ArrowUpRight, Users, MapPin, Calendar, UtensilsCrossed } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { formatDateFr } from "@/lib/utils";
 import type { RealisationSummary } from "@/lib/realisations";
@@ -13,7 +13,7 @@ export function RealisationCard({ r }: { r: RealisationSummary }) {
         className="block h-full rounded-xl overflow-hidden bg-background ring-1 ring-border shadow-xs hover:ring-teal-500/30 hover:-translate-y-1 hover:shadow-md transition-all"
       >
         <div className="relative aspect-[4/3] bg-cream-100 overflow-hidden">
-          {r.heroImageUrl && (
+          {r.heroImageUrl ? (
             <Image
               src={r.heroImageUrl}
               alt={r.heroImageAlt ?? r.title}
@@ -21,6 +21,16 @@ export function RealisationCard({ r }: { r: RealisationSummary }) {
               sizes="(min-width:1024px) 33vw, (min-width:640px) 50vw, 100vw"
               className="object-cover img-warm transition-transform duration-500 group-hover:scale-105"
             />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-teal-50 via-cream-50 to-cream-100">
+              <UtensilsCrossed
+                className="size-9 text-teal-600/45 transition-transform duration-500 group-hover:scale-110"
+                aria-hidden
+              />
+              <span className="font-display text-sm font-semibold tracking-wide text-teal-700/55">
+                Rezoli
+              </span>
+            </div>
           )}
           {r.featured && (
             <span className="absolute top-3 right-3">

@@ -11,6 +11,10 @@
  * without env vars.
  */
 import "server-only";
+import {
+  REZOLI_BLOG_POSTS,
+  REZOLI_REALISATIONS,
+} from "./content-fixtures";
 
 /* ──────────────────────────────────────────────────────────── BLOG */
 
@@ -38,188 +42,25 @@ export type DemoBlogPost = {
   content: unknown;
 };
 
-/** Helper: TipTap JSON paragraph */
-const p = (text: string) => ({
-  type: "paragraph",
-  content: [{ type: "text", text }],
-});
-const h2 = (text: string) => ({
-  type: "heading",
-  attrs: { level: 2 },
-  content: [{ type: "text", text }],
-});
-const ul = (items: string[]) => ({
-  type: "bulletList",
-  content: items.map((t) => ({
-    type: "listItem",
-    content: [p(t)],
-  })),
-});
-
-const yasmine: DemoBlogAuthor = {
-  firstName: "Yasmine",
-  lastName: "Trabelsi",
-  email: "yasmine@rezoli.tn",
-};
-const omar: DemoBlogAuthor = {
-  firstName: "Omar",
-  lastName: "Ben Salah",
-  email: "omar@rezoli.tn",
-};
-
-export const DEMO_BLOG_POSTS: DemoBlogPost[] = [
-  {
-    id: "demo-blog-1",
-    slug: "5-idees-pauses-cafe-reunions",
-    title: "5 idées de pauses café qui dynamisent vos réunions",
-    excerpt:
-      "Sortez du combo croissant-café tiède. Voici cinq formats de pauses pensés pour relancer l'attention de vos équipes en pleine session.",
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?auto=format&fit=crop&w=1600&q=80",
-    tags: ["Pauses café", "Inspiration", "Productivité"],
+export const DEMO_BLOG_POSTS: DemoBlogPost[] = REZOLI_BLOG_POSTS.map(
+  (b): DemoBlogPost => ({
+    id: `blog-${b.slug}`,
+    slug: b.slug,
+    title: b.title,
+    excerpt: b.excerpt,
+    coverImageUrl: null,
+    tags: b.tags,
     status: "PUBLISHED",
-    publishedAt: new Date("2026-05-02T09:30:00Z"),
-    createdAt: new Date("2026-04-28T14:00:00Z"),
-    updatedAt: new Date("2026-05-02T09:30:00Z"),
-    author: yasmine,
-    authorId: "demo-author-1",
-    seoTitle: "5 idées de pauses café pour vos réunions — Rezoli",
-    seoDescription:
-      "Cinq formats de pauses café premium pour redonner de l'énergie à vos sessions d'entreprise.",
-    content: {
-      type: "doc",
-      content: [
-        p(
-          "Une pause café réussie, c'est trois minutes pour souffler, dix minutes pour reconnecter avec ses collègues, et un goût qui reste en tête jusqu'à la fin de la journée. Voici cinq formats que nous recommandons à nos clients pour casser la routine du gobelet en carton."
-        ),
-        h2("1. La pause « réveil épicé »"),
-        p(
-          "Un café fort de spécialité, un thé vert à la menthe servi sur plateau, et trois bouchées salées — feuilleté harissa, mini pizza halloumi, mini quiche thon-câpres. Énergisant sans être lourd."
-        ),
-        h2("2. La pause healthy"),
-        p(
-          "Shots de gingembre frais, jus pressés, fruits coupés en cuillère individuelle, granolas maison. Parfaite pour les sessions de l'après-midi quand les paupières pèsent."
-        ),
-        ul([
-          "Bowl de fruits de saison",
-          "Granola croquant + yaourt grec",
-          "Eau infusée concombre / basilic",
-          "Mini muffins son d'avoine et myrtille",
-        ]),
-        h2("3. La pause tunisoise"),
-        p(
-          "On joue local : thé à la menthe versé de haut, mlaoui chaud, makroud miel, dates Deglet Nour, et un espresso intense pour ceux qui en redemandent. Souvenir mémorable garanti pour vos invités étrangers."
-        ),
-        h2("4. La pause sucrée signature"),
-        p(
-          "Cafés et chocolats chauds, viennoiseries pur beurre, financiers, cookies tièdes. Le combo confort qu'on adore servir en fin d'événement de lancement produit."
-        ),
-        h2("5. La pause cocktail sans alcool"),
-        p(
-          "Vers 17h, après une longue journée, un mocktail détox-citron, des bouchées salées, et une boisson chaude pour ceux qui finissent encore en réunion. Élégant et structurant pour la fin de journée."
-        ),
-        p(
-          "Envie d'un format sur-mesure ? Nos équipes adaptent les pauses à votre charte de marque et au timing de votre événement."
-        ),
-      ],
-    },
-  },
-  {
-    id: "demo-blog-2",
-    slug: "cocktail-dinatoire-vs-buffet",
-    title: "Cocktail dînatoire vs buffet : comment choisir pour votre événement",
-    excerpt:
-      "Format debout ou assis, durée, budget, image de marque… Le bon choix dépend de trois questions que nous posons à chaque client.",
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1600&q=80",
-    tags: ["Cocktails", "Conseils", "Événementiel"],
-    status: "PUBLISHED",
-    publishedAt: new Date("2026-04-22T11:00:00Z"),
-    createdAt: new Date("2026-04-19T09:00:00Z"),
-    updatedAt: new Date("2026-04-22T11:00:00Z"),
-    author: omar,
-    authorId: "demo-author-2",
-    seoTitle: "Cocktail dînatoire ou buffet : comment choisir ?",
-    seoDescription:
-      "Notre méthode en trois questions pour décider entre un format cocktail debout et un buffet assis pour votre événement.",
-    content: {
-      type: "doc",
-      content: [
-        p(
-          "C'est la première question qu'on nous pose après « combien d'invités ? ». Et la réponse n'est jamais la même — elle dépend de l'expérience que vous voulez offrir et de la dynamique que vous cherchez."
-        ),
-        h2("Question 1 — Quelle est la durée de l'événement ?"),
-        p(
-          "Sous 2h, le cocktail dînatoire gagne presque toujours : il maintient l'énergie, permet le networking, et évite l'effet « repas qui s'éternise ». Au-delà de 3h, le buffet ou le service à table créent un point d'ancrage qui structure la soirée."
-        ),
-        h2("Question 2 — Quelle image souhaitez-vous projeter ?"),
-        p(
-          "Le cocktail dînatoire signale modernité, fluidité, dynamisme — parfait pour lancement produit, networking pro, vernissage. Le buffet ou le service signalent générosité, prise en charge, marque qui « reçoit » ses invités — adapté pour fêtes de fin d'année, événements clients VIP."
-        ),
-        h2("Question 3 — Quel est le profil de vos invités ?"),
-        p(
-          "Avec des invités qui se connaissent peu, le cocktail force les interactions. Avec un groupe soudé, le buffet ou la table permettent d'approfondir les échanges. Et n'oubliez pas la dimension senior : passé un certain seuil, les invités préfèrent généralement s'asseoir."
-        ),
-        h2("Notre recommandation"),
-        ul([
-          "0-80 invités, lancement produit : cocktail dînatoire (compter 12-15 pièces par invité)",
-          "80-150, événement client : buffet semi-assis avec mange-debout",
-          "150+, fête fin d'année : buffet en îlots de 30-40 invités, espaces lounge",
-          "Évènement VIP < 30 : service à table en trois services",
-        ]),
-        p(
-          "Dans tous les cas, on commence par une heure de réunion ensemble pour cadrer le format avant de proposer un devis. Pas de menu sur catalogue — chaque événement a son tempo."
-        ),
-      ],
-    },
-  },
-  {
-    id: "demo-blog-3",
-    slug: "coulisses-lancement-marque",
-    title: "Pourquoi le sur-mesure change tout — coulisses d'un lancement de marque",
-    excerpt:
-      "Trois semaines de préparation, deux dégustations, une logistique millimétrée. Récit d'un événement où chaque détail comptait.",
-    coverImageUrl:
-      "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1600&q=80",
-    tags: ["Coulisses", "Sur-mesure", "Lancement"],
-    status: "PUBLISHED",
-    publishedAt: new Date("2026-04-08T10:00:00Z"),
-    createdAt: new Date("2026-04-05T08:00:00Z"),
-    updatedAt: new Date("2026-04-08T10:00:00Z"),
-    author: yasmine,
-    authorId: "demo-author-1",
-    seoTitle: "Coulisses d'un lancement de marque sur-mesure",
-    seoDescription:
-      "Comment notre équipe a conçu un cocktail dînatoire 100 % sur-mesure pour un lancement produit à Tunis.",
-    content: {
-      type: "doc",
-      content: [
-        p(
-          "Quand Carthage Group nous a contactés pour le lancement de sa nouvelle ligne premium, le cahier des charges tenait en une phrase : « on veut que les invités en parlent encore dans trois mois »."
-        ),
-        h2("Semaine -3 : cadrage et dégustation"),
-        p(
-          "Première réunion avec l'équipe marketing pour aligner ton, palette de couleurs, contraintes diététiques. Notre chef Walid propose un menu d'une dizaine de bouchées inspirées des trois régions phares de la marque. Première dégustation à J-15 : trois pièces sont validées, deux sont refaites, une est abandonnée."
-        ),
-        h2("Semaine -1 : répétition logistique"),
-        p(
-          "Visite du lieu, mesure du flux invités, validation des points de service. On commande la verrerie sur-mesure (verres siglés), on aligne la brigade — un chef pour 30 invités sur ce format. Briefing serveurs avec speech d'accueil intégré, parce que l'expérience commence à la porte."
-        ),
-        h2("Le jour J"),
-        ul([
-          "16h : arrivée sur site, dressage des îlots",
-          "17h30 : mise en place finale, dégustation contrôle",
-          "18h00 : ouverture, accueil au verre de bienvenue siglé",
-          "21h30 : fin de service, démontage en 90 minutes",
-        ]),
-        h2("Le résultat"),
-        p(
-          "350 invités servis. Trois articles dans la presse économique. Et surtout, un client qui nous rappelle six semaines plus tard pour son séminaire annuel. C'est ça, le vrai indicateur de succès."
-        ),
-      ],
-    },
-  },
-];
+    publishedAt: b.publishedAt,
+    createdAt: b.publishedAt,
+    updatedAt: b.publishedAt,
+    author: null,
+    authorId: null,
+    seoTitle: b.seoTitle,
+    seoDescription: b.seoDescription,
+    content: b.content,
+  })
+);
 
 /* ──────────────────────────────────────────────────── RÉALISATIONS */
 
@@ -256,186 +97,31 @@ export type DemoRealisation = {
   updatedAt: Date;
 };
 
-export const DEMO_REALISATIONS: DemoRealisation[] = [
-  {
-    id: "demo-real-1",
-    slug: "lancement-carthage-group",
-    title: "Lancement de la collection Carthage Premium",
-    eventType: "Cocktail dînatoire",
-    clientName: "Carthage Group",
-    date: new Date("2026-03-14T18:00:00Z"),
-    location: "Villa des Arts, Sidi Bou Saïd",
-    guestCount: 350,
-    heroImageUrl:
-      "https://images.unsplash.com/photo-1519671482749-fd09be7ccebf?auto=format&fit=crop&w=1600&q=80",
-    heroImageAlt: "Cocktail dînatoire à la villa des Arts",
-    gallery: [
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1555244162-803834f70033?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=1200&q=80",
-    ],
-    shortPitch:
-      "Un cocktail dînatoire ultra-personnalisé pour le lancement de la nouvelle ligne premium de Carthage Group. Trois semaines de préparation, dix bouchées signature, 350 invités émerveillés.",
-    longContent: {
-      type: "doc",
-      content: [
-        h2("Brief"),
-        p(
-          "Carthage Group nous a confié l'animation gastronomique du lancement de sa collection Premium. Objectif : marquer les invités, faire parler la presse, refléter l'ADN haut-de-gamme de la marque."
-        ),
-        h2("Notre proposition"),
-        p(
-          "Dix bouchées sur-mesure inspirées de trois régions tunisoises emblématiques. Verrerie siglée, mange-debout en bois clair, brigade de 12 personnes en tenue brand. Un parcours de dégustation pensé comme un voyage."
-        ),
-        ul([
-          "10 bouchées signature dont 3 créées spécialement",
-          "Brigade de 12 personnes (chef + 2 sous-chefs + 9 serveurs)",
-          "Verrerie et vaisselle siglées",
-          "Mange-debout bois et îlots cuivre",
-        ]),
-        h2("Résultat"),
-        p(
-          "Une presse économique conquise (3 articles), une équipe client ravie, et — six semaines plus tard — la signature du contrat séminaire annuel. Le sur-mesure paie."
-        ),
-      ],
-    },
-    outcomes: [
-      { label: "Invités servis", value: "350" },
-      { label: "Articles presse", value: "3" },
-      { label: "Note client", value: "4.9/5" },
-    ],
-    testimonial: {
-      author: "Yasmine Trabelsi",
-      role: "Directrice Marketing",
-      company: "Carthage Group",
-      content:
-        "Service impeccable, bouchées créatives, équipe ultra-pro. Nos invités en parlent encore six semaines après. On a déjà signé pour notre séminaire annuel.",
-      rating: 5,
-    },
-    status: "PUBLISHED",
-    publishedAt: new Date("2026-03-25T10:00:00Z"),
-    featured: true,
-    order: 1,
-    createdAt: new Date("2026-03-20T10:00:00Z"),
-    updatedAt: new Date("2026-03-25T10:00:00Z"),
-  },
-  {
-    id: "demo-real-2",
-    slug: "fete-fin-annee-banque-mediterranee",
-    title: "Cérémonie de fin d'année Banque Méditerranée",
-    eventType: "Cérémonie de fin d'année",
-    clientName: "Banque Méditerranée",
-    date: new Date("2025-12-18T19:00:00Z"),
-    location: "Hôtel Laico Tunis",
-    guestCount: 220,
-    heroImageUrl:
-      "https://images.unsplash.com/photo-1467810563316-b5476525c0f9?auto=format&fit=crop&w=1600&q=80",
-    heroImageAlt: "Cérémonie de fin d'année au Laico Tunis",
-    gallery: [
-      "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1530021232320-687d8e3dba54?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1505236858219-8359eb29e329?auto=format&fit=crop&w=1200&q=80",
-    ],
-    shortPitch:
-      "Soirée de fin d'année pour 220 collaborateurs avec stations gourmandes, bar à mocktails et discours scénographié. Une logistique millimétrée pour une atmosphère chaleureuse.",
-    longContent: null,
-    outcomes: [
-      { label: "Collaborateurs", value: "220" },
-      { label: "Stations", value: "6" },
-      { label: "Satisfaction", value: "97%" },
-    ],
-    testimonial: {
-      author: "Karim Mansour",
-      role: "RH Director",
-      company: "Banque Méditerranée",
-      content:
-        "Une équipe qui anticipe tout. La soirée a tourné comme une horloge et nos équipes en parlent encore.",
-      rating: 5,
-    },
-    status: "PUBLISHED",
-    publishedAt: new Date("2026-01-10T10:00:00Z"),
-    featured: true,
-    order: 2,
-    createdAt: new Date("2026-01-08T10:00:00Z"),
-    updatedAt: new Date("2026-01-10T10:00:00Z"),
-  },
-  {
-    id: "demo-real-3",
-    slug: "soutenance-polytechnique-tunis",
-    title: "Soutenance de fin d'études — Polytechnique Tunis",
-    eventType: "Soutenance",
-    clientName: "École Polytechnique de Tunis",
-    date: new Date("2026-02-04T14:00:00Z"),
-    location: "Campus de La Marsa",
-    guestCount: 90,
-    heroImageUrl:
-      "https://images.unsplash.com/photo-1523580494863-6f3031224c94?auto=format&fit=crop&w=1600&q=80",
-    heroImageAlt: "Cocktail post-soutenance",
-    gallery: [
-      "https://images.unsplash.com/photo-1571115764595-644a1f56a55c?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1559925393-8be0ec4767c8?auto=format&fit=crop&w=1200&q=80",
-    ],
-    shortPitch:
-      "Cocktail honorifique pour 90 invités à l'issue de la soutenance d'une promotion d'ingénieurs. Format élégant, sobre, à la hauteur du moment.",
-    longContent: null,
-    outcomes: [
-      { label: "Diplômés célébrés", value: "32" },
-      { label: "Invités", value: "90" },
-    ],
+export const DEMO_REALISATIONS: DemoRealisation[] = REZOLI_REALISATIONS.map(
+  (r): DemoRealisation => ({
+    id: `real-${r.slug}`,
+    slug: r.slug,
+    title: r.title,
+    eventType: r.eventType,
+    clientName: r.clientName,
+    date: r.date,
+    location: r.location,
+    guestCount: r.guestCount,
+    heroImageUrl: null,
+    heroImageAlt: null,
+    gallery: [],
+    shortPitch: r.shortPitch,
+    longContent: r.longContent,
+    outcomes: r.outcomes,
     testimonial: null,
     status: "PUBLISHED",
-    publishedAt: new Date("2026-02-08T10:00:00Z"),
-    featured: false,
-    order: 3,
-    createdAt: new Date("2026-02-06T10:00:00Z"),
-    updatedAt: new Date("2026-02-08T10:00:00Z"),
-  },
-  {
-    id: "demo-real-4",
-    slug: "soiree-bac-lycee-pierre-mendes",
-    title: "Soirée Bac Lycée Pierre-Mendès-France",
-    eventType: "Soirée Bac",
-    clientName: "Lycée Pierre-Mendès-France",
-    date: new Date("2025-07-12T20:00:00Z"),
-    location: "Plage Sidi Bou Saïd",
-    guestCount: 140,
-    heroImageUrl:
-      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?auto=format&fit=crop&w=1600&q=80",
-    heroImageAlt: "Soirée Bac sur la plage",
-    gallery: [
-      "https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=1200&q=80",
-    ],
-    shortPitch:
-      "Une soirée plage pour 140 bacheliers avec stations street-food, bar à mocktails et DJ. L'événement de l'été 2025.",
-    longContent: null,
-    outcomes: [
-      { label: "Bacheliers", value: "140" },
-      { label: "Stations", value: "5" },
-    ],
-    testimonial: {
-      author: "Sirine Belkhiria",
-      role: "Présidente BDE",
-      company: "Lycée Pierre-Mendès-France",
-      content:
-        "Tout le monde a parlé de cette soirée pendant des semaines. Merci pour la flexibilité — vous avez géré comme des pros.",
-      rating: 5,
-    },
-    status: "PUBLISHED",
-    publishedAt: new Date("2025-07-20T10:00:00Z"),
-    featured: false,
-    order: 4,
-    createdAt: new Date("2025-07-18T10:00:00Z"),
-    updatedAt: new Date("2025-07-20T10:00:00Z"),
-  },
-];
+    publishedAt: r.date,
+    featured: r.featured,
+    order: r.order,
+    createdAt: r.date,
+    updatedAt: r.date,
+  })
+);
 
 /* ──────────────────────────────────────────────── DEVIS / QUOTES */
 
