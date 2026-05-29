@@ -13,7 +13,8 @@ export type FlowState = {
   eventTime: string;
   location: string;
   guestCount: number;
-  withVerrerie: boolean; // pauses-cafe only
+  withVerrerie: boolean; // pauses-cafe only — true = "Avec service"
+  dejeunerServiceMode: "lunch_box" | "a_table"; // pauses-dejeuner only
   // Step 2
   formulaId:
     | "essentielle"
@@ -39,13 +40,14 @@ export type FlowState = {
 
 export type FlowAction =
   | { type: "GO_STEP"; step: FlowStep }
-  | { type: "SET_EVENT"; patch: Partial<Pick<FlowState, "eventDate" | "eventTime" | "location" | "guestCount" | "withVerrerie">> }
+  | { type: "SET_EVENT"; patch: Partial<Pick<FlowState, "eventDate" | "eventTime" | "location" | "guestCount" | "withVerrerie" | "dejeunerServiceMode">> }
   | { type: "PICK_PREBUILT"; formulaId: "essentielle" | "business" | "premium" | "signature"; details: QuoteDetails }
   | { type: "OPEN_MODAL" }
   | { type: "CLOSE_MODAL" }
   | { type: "SET_CUSTOM_DETAILS"; details: QuoteDetails }
   | { type: "SET_CONTACT"; patch: Partial<Pick<FlowState, "firstName" | "lastName" | "email" | "phone" | "company" | "message" | "consentRgpd">> }
   | { type: "SET_HUBSPOT_CONTACT_ID"; id: string | null }
+  | { type: "RESET_FORMULA" }
   | { type: "RESET" };
 
 export function makeInitialState(service: ServiceSlug, preselect?: string): FlowState {
@@ -61,6 +63,7 @@ export function makeInitialState(service: ServiceSlug, preselect?: string): Flow
     location: "",
     guestCount: 0,
     withVerrerie: false,
+    dejeunerServiceMode: "lunch_box",
     formulaId,
     details: null,
     modalOpen: false,
@@ -102,6 +105,8 @@ export function flowReducer(state: FlowState, action: FlowAction): FlowState {
       return { ...state, ...action.patch };
     case "SET_HUBSPOT_CONTACT_ID":
       return { ...state, hubspotContactId: action.id };
+    case "RESET_FORMULA":
+      return { ...state, formulaId: null, details: null };
     case "RESET":
       return makeInitialState(state.service);
   }

@@ -143,40 +143,160 @@ function CafePicker({
   packs: CafePack[];
 }) {
   const nb = state.guestCount;
+  const avec = state.withVerrerie;
+
+  const buildDetails = (p: CafePack, withService: boolean): QuoteDetails => ({
+    service: "pauses-cafe",
+    formulaId: p.id,
+    withVerrerie: withService,
+    boissons: p.boissons,
+    hasSale: true,
+    sale: p.sale,
+    hasSucre: true,
+    sucre: p.sucre,
+    serviceMode: withService ? "avec" : "sans",
+  });
+
+  // Toggle service mode; re-commit the selected formula so details + price stay in sync.
+  const setService = (withService: boolean) => {
+    dispatch({ type: "SET_EVENT", patch: { withVerrerie: withService } });
+    if (state.formulaId && state.formulaId !== "personnalise") {
+      const p = packs.find((x) => x.id === state.formulaId);
+      if (p) {
+        dispatch({
+          type: "PICK_PREBUILT",
+          formulaId: p.id,
+          details: buildDetails(p, withService),
+        });
+      }
+    }
+  };
+
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {packs.map((p) => {
-        const unit = cafePricePerPerson(p.id, nb, state.withVerrerie);
-        return (
-          <PackCard
-            key={p.id}
-            selected={state.formulaId === p.id}
-            onClick={() => {
-              const details: QuoteDetails = {
-                service: "pauses-cafe",
-                formulaId: p.id,
-                withVerrerie: state.withVerrerie,
-                boissons: p.boissons,
-                hasSale: true,
-                sale: p.sale,
-                hasSucre: true,
-                sucre: p.sucre,
-                serviceMode: state.withVerrerie ? "avec" : "sans",
-              };
-              dispatch({ type: "PICK_PREBUILT", formulaId: p.id, details });
-            }}
-            badge={p.badgeLabel}
-            name={p.name}
-            unit={unit}
-            inclusions={[
-              `Boissons : ${p.boissons.join(" · ")}`,
-              `Salé : ${p.sale.join(", ")}`,
-              `Sucré : ${p.sucre.join(", ")}`,
-            ]}
-          />
-        );
-      })}
+    <div className="space-y-5">
+      <ServiceModeToggle
+        avec={avec}
+        onChange={setService}
+        sansTitle="Sans service"
+        sansDesc="Livraison des produits, consommables, et thermos café & lait."
+        avecTitle="Avec service"
+        avecDesc="Mise en place, service par un ou plusieurs serveurs, et plateaux de service."
+      />
+
+      <div className="grid gap-4 md:grid-cols-2">
+        {packs.map((p) => {
+          const unit = cafePricePerPerson(p.id, nb, avec);
+          return (
+            <PackCard
+              key={p.id}
+              selected={state.formulaId === p.id}
+              onClick={() =>
+                dispatch({
+                  type: "PICK_PREBUILT",
+                  formulaId: p.id,
+                  details: buildDetails(p, avec),
+                })
+              }
+              badge={p.badgeLabel}
+              name={p.name}
+              unit={unit}
+              inclusions={[
+                `Boissons : ${p.boissons.join(" · ")}`,
+                `Salé : ${p.sale.join(", ")}`,
+                `Sucré : ${p.sucre.join(", ")}`,
+              ]}
+            />
+          );
+        })}
+      </div>
     </div>
+  );
+}
+
+/**
+ * Sans service / Avec service selector shown at the top of the café & déjeuner
+ * formula steps. Drives which price table is used for the formulas below.
+ */
+function ServiceModeToggle({
+  avec,
+  onChange,
+  sansTitle,
+  sansDesc,
+  avecTitle,
+  avecDesc,
+}: {
+  avec: boolean;
+  onChange: (avec: boolean) => void;
+  sansTitle: string;
+  sansDesc: string;
+  avecTitle: string;
+  avecDesc: string;
+}) {
+  return (
+    <fieldset>
+      <legend className="text-sm font-medium text-neutral-800 mb-2">
+        Option de service
+      </legend>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <ServiceModeOption
+          title={sansTitle}
+          desc={sansDesc}
+          selected={!avec}
+          onClick={() => onChange(false)}
+        />
+        <ServiceModeOption
+          title={avecTitle}
+          desc={avecDesc}
+          selected={avec}
+          onClick={() => onChange(true)}
+        />
+      </div>
+    </fieldset>
+  );
+}
+
+function ServiceModeOption({
+  title,
+  desc,
+  selected,
+  onClick,
+  disabled,
+}: {
+  title: string;
+  desc: string;
+  selected: boolean;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-pressed={selected}
+      className={cn(
+        "rounded-xl p-4 ring-1 text-left transition-all",
+        disabled && "opacity-50 cursor-not-allowed",
+        selected
+          ? "bg-teal-50 ring-2 ring-teal-500 shadow-sm"
+          : "bg-background ring-border hover:ring-teal-500/30"
+      )}
+    >
+      <span className="flex items-center gap-2">
+        <span
+          className={cn(
+            "flex h-4 w-4 shrink-0 items-center justify-center rounded-full transition-colors",
+            selected ? "bg-teal-500 text-white" : "border-2 border-neutral-300"
+          )}
+        >
+          {selected && <Check className="size-2.5" strokeWidth={3} />}
+        </span>
+        <span className="font-display font-semibold">{title}</span>
+      </span>
+      <span className="mt-1.5 block text-xs text-muted-foreground leading-snug">
+        {desc}
+      </span>
+    </button>
   );
 }
 
@@ -190,38 +310,93 @@ function DejeunerPicker({
   packs: DejeunerPack[];
 }) {
   const nb = state.guestCount;
+  const serviceMode = state.dejeunerServiceMode;
+  const aTable = serviceMode === "a_table";
+
+  const buildDetails = (
+    p: DejeunerPack,
+    picks: { entree?: string; plat?: string; dessert?: string },
+    mode: "lunch_box" | "a_table"
+  ): QuoteDetails => ({
+    service: "pauses-dejeuner",
+    formulaId: p.id,
+    boissons: p.boisson ?? [],
+    entree: !!p.entree,
+    plat: "chaud",
+    dessert: !!p.dessert,
+    dessertType: "les_deux",
+    serviceMode: mode,
+    selectedEntree: picks.entree,
+    selectedPlat: picks.plat,
+    selectedDessert: picks.dessert,
+  });
+
+  // Toggle service mode. "À table" is only valid for formulas that have table
+  // pricing (tblPrix). If the currently-selected formula can't be served à
+  // table, clear the selection so the user re-picks an eligible one.
+  const setService = (mode: "lunch_box" | "a_table") => {
+    dispatch({ type: "SET_EVENT", patch: { dejeunerServiceMode: mode } });
+    if (state.formulaId && state.formulaId !== "personnalise") {
+      const p = packs.find((x) => x.id === state.formulaId);
+      if (p && mode === "a_table" && !p.tblPrix) {
+        dispatch({ type: "RESET_FORMULA" });
+      } else if (p) {
+        const existing =
+          state.details?.service === "pauses-dejeuner"
+            ? state.details
+            : null;
+        dispatch({
+          type: "PICK_PREBUILT",
+          formulaId: p.id,
+          details: buildDetails(
+            p,
+            {
+              entree: existing?.selectedEntree,
+              plat: existing?.selectedPlat,
+              dessert: existing?.selectedDessert,
+            },
+            mode
+          ),
+        });
+      }
+    }
+  };
+
   return (
-    <div className="grid gap-4">
-      {packs.map((p) => (
-        <DejeunerCard
-          key={p.id}
-          pack={p}
-          guestCount={nb}
-          selected={state.formulaId === p.id}
-          existing={
-            state.details?.service === "pauses-dejeuner" &&
-            state.details.formulaId === p.id
-              ? state.details
-              : null
-          }
-          onSelect={(picks) => {
-            const details: QuoteDetails = {
-              service: "pauses-dejeuner",
-              formulaId: p.id,
-              boissons: p.boisson ?? [],
-              entree: !!p.entree,
-              plat: "chaud",
-              dessert: !!p.dessert,
-              dessertType: "les_deux",
-              serviceMode: "lunch_box",
-              selectedEntree: picks.entree,
-              selectedPlat: picks.plat,
-              selectedDessert: picks.dessert,
-            };
-            dispatch({ type: "PICK_PREBUILT", formulaId: p.id, details });
-          }}
-        />
-      ))}
+    <div className="space-y-5">
+      <ServiceModeToggle
+        avec={aTable}
+        onChange={(avec) => setService(avec ? "a_table" : "lunch_box")}
+        sansTitle="Sans service — Lunch box"
+        sansDesc="Repas préparés et livrés en lunch box individuelles, prêtes à distribuer."
+        avecTitle="Avec service — À table"
+        avecDesc="Repas servis à table avec le matériel nécessaire (vaisselle, verrerie) et serveurs."
+      />
+
+      <div className="grid gap-4">
+        {packs.map((p) => (
+          <DejeunerCard
+            key={p.id}
+            pack={p}
+            guestCount={nb}
+            serviceMode={serviceMode}
+            selected={state.formulaId === p.id}
+            existing={
+              state.details?.service === "pauses-dejeuner" &&
+              state.details.formulaId === p.id
+                ? state.details
+                : null
+            }
+            onSelect={(picks) =>
+              dispatch({
+                type: "PICK_PREBUILT",
+                formulaId: p.id,
+                details: buildDetails(p, picks, serviceMode),
+              })
+            }
+          />
+        ))}
+      </div>
     </div>
   );
 }
@@ -235,12 +410,14 @@ function DejeunerPicker({
 function DejeunerCard({
   pack,
   guestCount,
+  serviceMode,
   selected,
   existing,
   onSelect,
 }: {
   pack: DejeunerPack;
   guestCount: number;
+  serviceMode: "lunch_box" | "a_table";
   selected: boolean;
   existing: Extract<QuoteDetails, { service: "pauses-dejeuner" }> | null;
   onSelect: (picks: {
@@ -249,7 +426,11 @@ function DejeunerCard({
     dessert?: string;
   }) => void;
 }) {
-  const unit = dejeunerPricePerPerson(pack.id, guestCount, "lunch_box");
+  // "À table" is only available for formulas with table pricing (tblPrix).
+  const unavailableATable = serviceMode === "a_table" && !pack.tblPrix;
+  const unit = unavailableATable
+    ? null
+    : dejeunerPricePerPerson(pack.id, guestCount, serviceMode);
   const needsEntreePick = !!pack.entree && pack.entree.length > 1;
   const needsPlatPick = pack.plat.length > 1;
   const needsDessertPick = pack.dessert.length > 1;
@@ -268,6 +449,7 @@ function DejeunerCard({
   );
 
   const ready =
+    !unavailableATable &&
     (!needsEntreePick || !!entree) &&
     (!needsPlatPick || !!plat) &&
     (!needsDessertPick || !!dessert);
@@ -276,6 +458,7 @@ function DejeunerCard({
     <article
       className={cn(
         "rounded-xl bg-background ring-1 p-5 transition-all",
+        unavailableATable && "opacity-60",
         selected
           ? "ring-2 ring-teal-500 shadow-md"
           : "ring-border hover:ring-teal-500/40"
@@ -299,6 +482,13 @@ function DejeunerCard({
           </p>
         )}
       </header>
+
+      {unavailableATable && (
+        <p className="mb-4 rounded-lg bg-amber-50 ring-1 ring-amber-200 px-3 py-2 text-xs text-amber-800">
+          Cette formule est disponible uniquement en lunch box. Choisissez
+          « Sans service » pour la sélectionner.
+        </p>
+      )}
 
       <div className="space-y-4">
         {pack.entree && pack.entree.length > 0 && (

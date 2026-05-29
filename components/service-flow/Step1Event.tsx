@@ -6,7 +6,6 @@ import { ArrowRight } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { FieldError } from "@/components/ui/field-error";
 import type { FlowState, FlowAction } from "./state";
 import {
@@ -22,7 +21,6 @@ export function Step1Event({
   state,
   dispatch,
   minGuests,
-  showVerrerie,
   blockedDates,
   onContinue,
   service,
@@ -30,7 +28,6 @@ export function Step1Event({
   state: FlowState;
   dispatch: React.Dispatch<FlowAction>;
   minGuests: number;
-  showVerrerie?: boolean;
   blockedDates?: string[];
   onContinue: () => void;
   service: ServiceSlug;
@@ -247,24 +244,6 @@ export function Step1Event({
           </div>
         </div>
 
-        {showVerrerie && (
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-cream-50 px-4 py-3 cursor-pointer">
-            <Checkbox
-              id="verrerie"
-              checked={state.withVerrerie}
-              onCheckedChange={(v) =>
-                dispatch({ type: "SET_EVENT", patch: { withVerrerie: v === true } })
-              }
-            />
-            <span className="text-sm">
-              <strong className="block">Avec verrerie &amp; service en salle</strong>
-              <span className="text-muted-foreground">
-                Tasses en porcelaine, verres en verre, serveur sur place. Tarifs
-                différents selon l&apos;option choisie.
-              </span>
-            </span>
-          </label>
-        )}
       </section>
 
       <p className="text-[11px] text-muted-foreground leading-relaxed">
