@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import type { FlowState, FlowAction } from "../state";
-import { ModalQuestion, OptionPill, PillGrid, LiveRecap } from "./parts";
+import type { FlowState } from "../state";
+import type { CustomSubmit } from "../CustomizationModal";
+import type { QuoteDetails } from "@/lib/schemas";
+import { ModalQuestion, OptionPill, PillGrid, LiveRecap, ConsentCheckbox } from "./parts";
 
 type Options = { boissons: string[]; sale: string[]; sucre: string[] };
 
@@ -18,12 +20,12 @@ type LocalState = {
 
 export function DejeunerCustomization({
   state,
-  dispatch,
   options,
+  onSubmit,
 }: {
   state: FlowState;
-  dispatch: React.Dispatch<FlowAction>;
   options: Options;
+  onSubmit: CustomSubmit;
 }) {
   const initial: LocalState =
     state.details?.service === "pauses-dejeuner" && state.details.formulaId === "personnalise"
@@ -47,6 +49,8 @@ export function DejeunerCustomization({
         };
 
   const [s, setS] = React.useState<LocalState>(initial);
+  const [consent, setConsent] = React.useState(state.consentRgpd);
+  const [submitting, setSubmitting] = React.useState(false);
 
   const toggleBoisson = (v: string) =>
     setS((p) => ({
@@ -59,20 +63,22 @@ export function DejeunerCustomization({
   const next = () => setS((p) => ({ ...p, step: (p.step + 1) as LocalState["step"] }));
   const prev = () => setS((p) => ({ ...p, step: Math.max(1, p.step - 1) as LocalState["step"] }));
 
-  function commit() {
-    dispatch({
-      type: "SET_CUSTOM_DETAILS",
-      details: {
-        service: "pauses-dejeuner",
-        formulaId: "personnalise",
-        boissons: s.boissons,
-        entree: !!s.entree,
-        plat: s.plat ?? "chaud",
-        dessert: !!s.dessert,
-        dessertType: s.dessert ? (s.dessertType ?? "les_deux") : undefined,
-        serviceMode: s.serviceMode ?? "lunch_box",
-      },
-    });
+  const buildDetails = (): QuoteDetails => ({
+    service: "pauses-dejeuner",
+    formulaId: "personnalise",
+    boissons: s.boissons,
+    entree: !!s.entree,
+    plat: s.plat ?? "chaud",
+    dessert: !!s.dessert,
+    dessertType: s.dessert ? (s.dessertType ?? "les_deux") : undefined,
+    serviceMode: s.serviceMode ?? "lunch_box",
+  });
+
+  async function handleSubmit() {
+    if (!consent || submitting) return;
+    setSubmitting(true);
+    const ok = await onSubmit(buildDetails(), consent);
+    if (!ok) setSubmitting(false);
   }
 
   if (s.step === 1) {
@@ -206,16 +212,17 @@ export function DejeunerCustomization({
     );
   }
 
-  // Step 7 — récapitulatif dynamique avant validation finale
+  // Step 7 — récapitulatif dynamique + envoi de la demande
   return (
     <ModalQuestion
       index={7}
       total={7}
       title="Confirmez votre formule personnalisée"
-      hint="Revoyez vos choix avant de les ajouter à votre devis."
+      hint="Revoyez vos choix puis envoyez votre demande."
       onPrev={() => setS({ ...s, step: 6 })}
-      onNext={commit}
-      nextLabel="Valider mes choix"
+      onNext={handleSubmit}
+      nextLabel={submitting ? "Envoi…" : "Envoyer ma demande"}
+      nextDisabled={!consent || submitting}
       isLast
     >
       <LiveRecap
@@ -250,6 +257,7 @@ export function DejeunerCustomization({
           },
         ]}
       />
+      <ConsentCheckbox checked={consent} onChange={setConsent} />
     </ModalQuestion>
   );
 }

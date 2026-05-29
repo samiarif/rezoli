@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import type { FlowState, FlowAction } from "./state";
+import type { QuoteDetails } from "@/lib/schemas";
 import { CocktailsCustomization } from "./customization/Cocktails";
 import { CafeCustomization } from "./customization/Cafe";
 import { DejeunerCustomization } from "./customization/Dejeuner";
@@ -17,14 +18,22 @@ export type CustomOptionsByCategory = {
   sucre: string[];
 };
 
+/** Submits the full custom request; resolves true on success (redirecting). */
+export type CustomSubmit = (
+  details: QuoteDetails,
+  consent: boolean
+) => Promise<boolean>;
+
 export function CustomizationModal({
   state,
   dispatch,
   customOptions,
+  onSubmit,
 }: {
   state: FlowState;
   dispatch: React.Dispatch<FlowAction>;
   customOptions: CustomOptionsByCategory;
+  onSubmit: CustomSubmit;
 }) {
   return (
     <Dialog
@@ -41,22 +50,22 @@ export function CustomizationModal({
         {state.service === "cocktails-dinatoires" && (
           <CocktailsCustomization
             state={state}
-            dispatch={dispatch}
             options={customOptions}
+            onSubmit={onSubmit}
           />
         )}
         {state.service === "pauses-cafe" && (
           <CafeCustomization
             state={state}
-            dispatch={dispatch}
             options={customOptions}
+            onSubmit={onSubmit}
           />
         )}
         {state.service === "pauses-dejeuner" && (
           <DejeunerCustomization
             state={state}
-            dispatch={dispatch}
             options={customOptions}
+            onSubmit={onSubmit}
           />
         )}
       </DialogContent>

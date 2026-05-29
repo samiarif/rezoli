@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { Check, ChevronRight, ChevronLeft, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 export function ModalQuestion({
@@ -139,6 +141,34 @@ export function LiveRecap({
         ))}
       </dl>
     </div>
+  );
+}
+
+export function ConsentCheckbox({
+  checked,
+  onChange,
+}: {
+  checked: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <label className="mt-4 flex items-start gap-3 cursor-pointer">
+      <Checkbox
+        checked={checked}
+        onCheckedChange={(v) => onChange(v === true)}
+      />
+      <span className="text-xs text-muted-foreground leading-relaxed">
+        J&apos;accepte que mes données soient utilisées pour traiter ma demande,
+        conformément à la{" "}
+        <Link
+          href="/politique-confidentialite"
+          className="underline hover:text-teal-700"
+        >
+          politique de confidentialité
+        </Link>
+        .
+      </span>
+    </label>
   );
 }
 

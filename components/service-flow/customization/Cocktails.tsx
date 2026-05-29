@@ -1,8 +1,10 @@
 "use client";
 
 import * as React from "react";
-import type { FlowState, FlowAction } from "../state";
-import { ModalQuestion, OptionPill, PillGrid, LiveRecap } from "./parts";
+import type { FlowState } from "../state";
+import type { CustomSubmit } from "../CustomizationModal";
+import type { QuoteDetails } from "@/lib/schemas";
+import { ModalQuestion, OptionPill, PillGrid, LiveRecap, ConsentCheckbox } from "./parts";
 
 type Options = { boissons: string[]; sale: string[]; sucre: string[] };
 
@@ -16,12 +18,12 @@ type LocalState = {
 
 export function CocktailsCustomization({
   state,
-  dispatch,
   options,
+  onSubmit,
 }: {
   state: FlowState;
-  dispatch: React.Dispatch<FlowAction>;
   options: Options;
+  onSubmit: CustomSubmit;
 }) {
   const initial: LocalState =
     state.details?.service === "cocktails-dinatoires" &&
@@ -36,6 +38,8 @@ export function CocktailsCustomization({
       : { step: 1, boissons: [], sale: [], sucre: [], serviceMode: "avec" };
 
   const [s, setS] = React.useState<LocalState>(initial);
+  const [consent, setConsent] = React.useState(state.consentRgpd);
+  const [submitting, setSubmitting] = React.useState(false);
 
   const toggle = (key: "boissons" | "sale" | "sucre", v: string) => {
     setS((p) => ({
@@ -44,18 +48,20 @@ export function CocktailsCustomization({
     }));
   };
 
-  function commit() {
-    dispatch({
-      type: "SET_CUSTOM_DETAILS",
-      details: {
-        service: "cocktails-dinatoires",
-        formulaId: "personnalise",
-        boissons: s.boissons,
-        sale: s.sale,
-        sucre: s.sucre,
-        serviceMode: s.serviceMode,
-      },
-    });
+  const buildDetails = (): QuoteDetails => ({
+    service: "cocktails-dinatoires",
+    formulaId: "personnalise",
+    boissons: s.boissons,
+    sale: s.sale,
+    sucre: s.sucre,
+    serviceMode: s.serviceMode,
+  });
+
+  async function handleSubmit() {
+    if (!consent || submitting) return;
+    setSubmitting(true);
+    const ok = await onSubmit(buildDetails(), consent);
+    if (!ok) setSubmitting(false);
   }
 
   if (s.step === 1) {
@@ -158,16 +164,17 @@ export function CocktailsCustomization({
     );
   }
 
-  // Step 5 — récapitulatif dynamique avant validation finale
+  // Step 5 — récapitulatif dynamique + envoi de la demande
   return (
     <ModalQuestion
       index={5}
       total={5}
       title="Confirmez votre formule personnalisée"
-      hint="Revoyez vos choix avant de les ajouter à votre devis."
+      hint="Revoyez vos choix puis envoyez votre demande."
       onPrev={() => setS({ ...s, step: 4 })}
-      onNext={commit}
-      nextLabel="Valider mes choix"
+      onNext={handleSubmit}
+      nextLabel={submitting ? "Envoi…" : "Envoyer ma demande"}
+      nextDisabled={!consent || submitting}
       isLast
     >
       <LiveRecap
@@ -184,6 +191,7 @@ export function CocktailsCustomization({
           },
         ]}
       />
+      <ConsentCheckbox checked={consent} onChange={setConsent} />
     </ModalQuestion>
   );
 }

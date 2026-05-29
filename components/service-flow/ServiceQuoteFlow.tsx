@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Stepper } from "./Stepper";
@@ -15,6 +17,8 @@ import {
   isStep1Valid,
   isStep2Valid,
 } from "./state";
+import { submitServiceQuote } from "@/app/(marketing)/nos-services/[slug]/actions";
+import type { QuoteDetails } from "@/lib/schemas";
 import type {
   ServiceSlug,
   ServiceMeta,
@@ -56,10 +60,49 @@ export function ServiceQuoteFlow({
     flowReducer,
     makeInitialState(service, preselectFormula)
   );
+  const router = useRouter();
 
   const step1Done = isStep1Valid(state, meta.minGuests);
   const step2Done = isStep2Valid(state);
   const currentStep = state.step;
+
+  // Custom-offer submission: the customization modal's final step submits the
+  // full request directly (contact + event captured in Step 1 + custom choices)
+  // and redirects to the shared confirmation page — no separate Step 3.
+  const onCustomSubmit = React.useCallback(
+    async (details: QuoteDetails, consent: boolean): Promise<boolean> => {
+      try {
+        const result = await submitServiceQuote({
+          eventDate: state.eventDate,
+          eventTime: state.eventTime,
+          location: state.location,
+          guestCount: state.guestCount,
+          firstName: state.firstName,
+          lastName: state.lastName,
+          email: state.email,
+          phone: state.phone,
+          company: state.company || undefined,
+          message: state.message || undefined,
+          consentRgpd: consent,
+          details,
+          hubspotContactId: state.hubspotContactId,
+        });
+        if (result.ok) {
+          router.push(
+            `/devis-confirmation?ref=${encodeURIComponent(result.ref)}`
+          );
+          return true;
+        }
+        toast.error(result.message ?? "Veuillez corriger les erreurs.");
+        return false;
+      } catch (err) {
+        console.error("[ServiceQuoteFlow] custom submit failed", err);
+        toast.error("Une erreur est survenue. Réessayez.");
+        return false;
+      }
+    },
+    [state, router]
+  );
 
   const canGoTo = React.useCallback(
     (step: 1 | 2 | 3) => {
@@ -110,7 +153,6 @@ export function ServiceQuoteFlow({
               state={state}
               dispatch={dispatch}
               minGuests={meta.minGuests}
-              showVerrerie={service === "pauses-cafe"}
               blockedDates={blockedDates}
               service={service}
               onContinue={() => goTo(2)}
@@ -149,6 +191,7 @@ export function ServiceQuoteFlow({
             state={state}
             dispatch={dispatch}
             customOptions={customOptions}
+            onSubmit={onCustomSubmit}
           />
         )}
       </div>
