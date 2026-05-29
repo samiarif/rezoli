@@ -102,75 +102,6 @@ export function Step2Streetfood({
         </p>
       </header>
 
-      {/* ── Multi-stations packs ── */}
-      <section>
-        <div className="flex items-center gap-3 mb-3">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
-            <Layers className="size-4" />
-          </span>
-          <div>
-            <h3 className="font-display text-base font-semibold">
-              Packs multi-stations
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              1 formule au choix — combinaison clé en main de 2 à 4 stations.
-            </p>
-          </div>
-        </div>
-        <div className="grid gap-3 sm:grid-cols-2">
-          {streetfoodMultiPacks.map((pack) => {
-            const unit = streetfoodMultiPackPricePerPerson(pack.id, nb) ?? 0;
-            const selected = multiPackId === pack.id;
-            return (
-              <button
-                type="button"
-                key={pack.id}
-                aria-pressed={selected}
-                onClick={() =>
-                  setMultiPackId((prev) => (prev === pack.id ? undefined : pack.id))
-                }
-                className={cn(
-                  "text-left rounded-xl bg-background p-4 ring-1 transition-all hover:-translate-y-0.5",
-                  selected
-                    ? "ring-2 ring-amber-500 shadow-md bg-amber-50/50"
-                    : "ring-border hover:ring-amber-400/40"
-                )}
-              >
-                <div className="flex items-start justify-between gap-2">
-                  <h4 className="font-display text-base font-semibold">
-                    {pack.name}
-                  </h4>
-                  <span
-                    className={cn(
-                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors",
-                      selected
-                        ? "bg-amber-500 text-white"
-                        : "border-2 border-neutral-300"
-                    )}
-                  >
-                    {selected && <Check className="size-3" strokeWidth={3} />}
-                  </span>
-                </div>
-                <ul className="mt-2 space-y-0.5">
-                  {pack.items.map((it) => (
-                    <li key={it} className="text-xs text-muted-foreground flex gap-1.5">
-                      <Check className="size-3 text-teal-600 shrink-0 mt-0.5" />
-                      <span>{it}</span>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-sm">
-                  <span className="font-semibold text-amber-700">
-                    {formatTND(unit)}
-                  </span>
-                  <span className="text-xs text-muted-foreground"> / pers. HT</span>
-                </p>
-              </button>
-            );
-          })}
-        </div>
-      </section>
-
       {/* ── Stations solo ── */}
       <section>
         <h3 className="font-display text-base font-semibold mb-3">
@@ -307,6 +238,75 @@ export function Step2Streetfood({
           );
         })}
       </div>
+      </section>
+
+      {/* ── Multi-stations packs ── */}
+      <section>
+        <div className="flex items-center gap-3 mb-3">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50 text-amber-700">
+            <Layers className="size-4" />
+          </span>
+          <div>
+            <h3 className="font-display text-base font-semibold">
+              Packs multi-stations
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              1 formule au choix — combinaison clé en main de 2 à 4 stations.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {streetfoodMultiPacks.map((pack) => {
+            const unit = streetfoodMultiPackPricePerPerson(pack.id, nb) ?? 0;
+            const selected = multiPackId === pack.id;
+            return (
+              <button
+                type="button"
+                key={pack.id}
+                aria-pressed={selected}
+                onClick={() =>
+                  setMultiPackId((prev) => (prev === pack.id ? undefined : pack.id))
+                }
+                className={cn(
+                  "text-left rounded-xl bg-background p-4 ring-1 transition-all hover:-translate-y-0.5",
+                  selected
+                    ? "ring-2 ring-amber-500 shadow-md bg-amber-50/50"
+                    : "ring-border hover:ring-amber-400/40"
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <h4 className="font-display text-base font-semibold">
+                    {pack.name}
+                  </h4>
+                  <span
+                    className={cn(
+                      "inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full transition-colors",
+                      selected
+                        ? "bg-amber-500 text-white"
+                        : "border-2 border-neutral-300"
+                    )}
+                  >
+                    {selected && <Check className="size-3" strokeWidth={3} />}
+                  </span>
+                </div>
+                <ul className="mt-2 space-y-0.5">
+                  {pack.items.map((it) => (
+                    <li key={it} className="text-xs text-muted-foreground flex gap-1.5">
+                      <Check className="size-3 text-teal-600 shrink-0 mt-0.5" />
+                      <span>{it}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-sm">
+                  <span className="font-semibold text-amber-700">
+                    {formatTND(unit)}
+                  </span>
+                  <span className="text-xs text-muted-foreground"> / pers. HT</span>
+                </p>
+              </button>
+            );
+          })}
+        </div>
       </section>
 
       {/* Live total */}
