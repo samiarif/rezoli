@@ -17,7 +17,7 @@ const STATS = [
 export const metadata: Metadata = {
   title: "Nos partenaires",
   description:
-    "Traiteurs, pâtisseries, restaurants et concepts food : découvrez nos partenaires culinaires de confiance.",
+    "Traiteurs, pâtisseries, boissons et street food : découvrez nos partenaires culinaires de confiance.",
   alternates: { canonical: "/nos-partenaires" },
 };
 
@@ -33,7 +33,7 @@ export default function PartnersPage() {
       <PageHero
         eyebrow="Écosystème"
         title="Un réseau de partenaires d'exception"
-        description="Rezoli réunit des partenaires culinaires de confiance : traiteurs, pâtisseries, restaurants et concepts food pour tous types d'événements."
+        description="Rezoli réunit des partenaires culinaires de confiance : traiteurs, pâtisseries, boissons et street food pour tous types d'événements."
         breadcrumbs={[
           { href: "/", label: "Accueil" },
           { href: "/nos-partenaires", label: "Nos partenaires" },
@@ -79,7 +79,7 @@ export default function PartnersPage() {
               Une sélection d&apos;enseignes de qualité
             </h2>
             <p className="lede mt-4 text-pretty mx-auto max-w-2xl">
-              Traiteurs, pâtisseries, restaurants et concepts food : chaque
+              Traiteurs, pâtisseries, boissons et street food : chaque
               partenaire est sélectionné pour son exigence et son savoir-faire.
               Filtrez par catégorie ci-dessous.
             </p>
@@ -91,7 +91,7 @@ export default function PartnersPage() {
 
       <CTASection
         title="Vous voulez rejoindre notre écosystème ?"
-        description="Traiteurs, pâtisseries, restaurants ou concepts food : nous sommes toujours à l'écoute des bons profils."
+        description="Traiteurs, pâtisseries, boissons ou street food : nous sommes toujours à l'écoute des bons profils."
       />
     </>
   );

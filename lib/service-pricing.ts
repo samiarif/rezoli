@@ -92,6 +92,8 @@ function streetfoodBracketIndex(nb: number): 0 | 1 {
 export type StationSelection = {
   stationId: string;
   variant?: string;
+  /** Mixable stations (Pizza, Crêpe): 1 variety, or a mix of max 2 (price = average). */
+  variants?: string[];
   piecesPerPerson: number;
 };
 
@@ -104,7 +106,16 @@ export function streetfoodLinePrice(
   const idx = streetfoodBracketIndex(nb);
 
   let unit: number;
-  if (selection.variant && station.variants) {
+  if (selection.variants && selection.variants.length > 0 && station.variants) {
+    // Mixable station (Pizza, Crêpe): price/person = average of the selected
+    // variants (1 or 2). Pieces are fixed at 1/pers. for these stations.
+    const variants = station.variants;
+    const prices = selection.variants.map((label) => {
+      const v = variants.find((x) => x.label === label);
+      return v ? v.prix[idx] : station.prix[idx];
+    });
+    unit = +(prices.reduce((a, b) => a + b, 0) / prices.length).toFixed(3);
+  } else if (selection.variant && station.variants) {
     const v = station.variants.find((x) => x.label === selection.variant);
     unit = v ? v.prix[idx] : station.prix[idx];
   } else {

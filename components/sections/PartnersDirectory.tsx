@@ -11,10 +11,6 @@ import {
 
 type Filter = "all" | PartnerCategory;
 
-const CATEGORY_LABELS: Record<PartnerCategory, string> = Object.fromEntries(
-  PARTNER_CATEGORIES.map((c) => [c.id, c.label])
-) as Record<PartnerCategory, string>;
-
 export function PartnersDirectory() {
   const [filter, setFilter] = React.useState<Filter>("all");
 
@@ -61,21 +57,23 @@ export function PartnersDirectory() {
             className="group flex flex-col items-center justify-center gap-3 h-32 rounded-xl bg-background ring-1 ring-border shadow-xs hover:shadow-md hover:-translate-y-0.5 hover:ring-teal-500/30 transition-all px-4 py-3"
           >
             {p.logo ? (
-              <Image
-                src={p.logo}
-                alt={p.name}
-                width={180}
-                height={80}
-                className="max-h-14 w-auto object-contain"
-              />
+              <>
+                <Image
+                  src={p.logo}
+                  alt={p.name}
+                  width={180}
+                  height={80}
+                  className="max-h-14 w-auto object-contain"
+                />
+                <span className="text-xs font-medium text-neutral-700 text-center line-clamp-1">
+                  {p.name}
+                </span>
+              </>
             ) : (
               <span className="font-display text-base font-semibold text-neutral-800 text-center">
                 {p.name}
               </span>
             )}
-            <span className="text-[11px] uppercase tracking-wider text-muted-foreground">
-              {CATEGORY_LABELS[p.category]}
-            </span>
           </li>
         ))}
       </ul>

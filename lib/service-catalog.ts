@@ -489,7 +489,7 @@ export type StreetfoodStation = {
   description: string;
   prix: [number, number]; // 2 brackets: 100-149 / 150+
   variants?: Array<{ label: string; prix: [number, number] }>; // variant-specific override pricing
-  multiVariant?: boolean; // Pizza picks multiple variants; others pick 1
+  multiVariant?: boolean; // Mixable (Pizza, Crêpe): pick 1 variety OR a mix of max 2 (price = average)
 };
 
 export const STREETFOOD_BRACKETS = [100, 150] as const;
@@ -526,7 +526,8 @@ export const streetfoodStations: StreetfoodStation[] = [
   {
     id: "pizza",
     name: "Station Pizza",
-    description: "Thon · 4 Fromages · Pepperoni · Pastrami · Végétarienne",
+    description:
+      "1 variété au choix, ou un mélange de 2 (Thon · 4 Fromages · Pepperoni · Pastrami · Végétarienne)",
     prix: [10, 8.5],
     multiVariant: true,
     variants: [
@@ -540,8 +541,9 @@ export const streetfoodStations: StreetfoodStation[] = [
   {
     id: "crepe",
     name: "Station Crêpe",
-    description: "Au choix : Thon Fromage ou Nutella",
+    description: "1 variété au choix, ou un mélange de 2 (Thon Fromage · Nutella)",
     prix: [13, 12],
+    multiVariant: true,
     variants: [
       { label: "Thon Fromage", prix: [13, 12] },
       { label: "Nutella", prix: [13, 12] },

@@ -323,7 +323,7 @@ async function sendEmails(
   try {
     const { Resend } = await import("resend");
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const adminEmail = process.env.QUOTE_TO_EMAIL ?? "contact@rezoli.tn";
+    const adminEmail = process.env.QUOTE_TO_EMAIL ?? "sales@rezoli.tn";
     const from =
       process.env.EMAIL_FROM_NOREPLY ?? "Rezoli <no-reply@rezoli.tn>";
 

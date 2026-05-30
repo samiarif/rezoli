@@ -67,6 +67,28 @@ export function Step2Streetfood({
     );
   }
 
+  /**
+   * Mixable stations (Pizza, Crêpe): a single selection holds 1 or 2 variants.
+   * Toggling a variant adds/removes it (max 2); removing the last one clears the
+   * station. Price/person is fixed at 1 piece and averaged in streetfoodLinePrice.
+   */
+  function toggleMix(stationId: string, label: string) {
+    setSelections((prev) => {
+      const others = prev.filter((x) => x.stationId !== stationId);
+      const current = prev.find((x) => x.stationId === stationId)?.variants ?? [];
+      let next: string[];
+      if (current.includes(label)) {
+        next = current.filter((l) => l !== label);
+      } else if (current.length < 2) {
+        next = [...current, label];
+      } else {
+        next = current; // already 2 — max reached, ignore
+      }
+      if (next.length === 0) return others;
+      return [...others, { stationId, variants: next, piecesPerPerson: 1 }];
+    });
+  }
+
   function commit() {
     dispatch({
       type: "SET_CUSTOM_DETAILS",
@@ -113,7 +135,10 @@ export function Step2Streetfood({
       <div className="grid gap-4 sm:grid-cols-2">
         {stations.map((station) => {
           if (station.variants && station.multiVariant) {
-            // Pizza: multi-select variants
+            // Pizza / Crêpe: pick 1 variety, or mix max 2 (price = average).
+            const mixSel = selections.find((x) => x.stationId === station.id);
+            const selVariants = mixSel?.variants ?? [];
+            const mixLine = mixSel ? streetfoodLinePrice(mixSel, nb) : null;
             return (
               <div
                 key={station.id}
@@ -121,25 +146,60 @@ export function Step2Streetfood({
               >
                 <h3 className="font-display text-lg font-semibold">{station.name}</h3>
                 <p className="text-xs text-muted-foreground mt-1">{station.description}</p>
+                <p className="mt-2 text-[11px] font-medium text-teal-700/80">
+                  1 variété, ou un mélange de 2 (prix = moyenne des deux).
+                </p>
                 <ul className="mt-3 space-y-2">
                   {station.variants.map((v) => {
-                    const sel = getSel(station.id, v.label);
+                    const checked = selVariants.includes(v.label);
+                    const atMax = !checked && selVariants.length >= 2;
                     return (
-                      <VariantRow
+                      <li
                         key={v.label}
-                        label={v.label}
-                        unit={nb >= 150 ? v.prix[1] : v.prix[0]}
-                        selection={sel}
-                        onToggle={() =>
-                          sel
-                            ? remove(station.id, v.label)
-                            : add(station.id, v.label)
-                        }
-                        onPieces={(n) => setPieces(station.id, v.label, n)}
-                      />
+                        className={cn(
+                          "flex items-center justify-between gap-3 rounded-md p-2.5 ring-1 transition-colors",
+                          checked
+                            ? "bg-teal-50 ring-teal-200"
+                            : atMax
+                            ? "bg-cream-50/60 ring-border opacity-50"
+                            : "bg-cream-50 ring-border"
+                        )}
+                      >
+                        <button
+                          type="button"
+                          disabled={atMax}
+                          onClick={() => toggleMix(station.id, v.label)}
+                          aria-pressed={checked}
+                          className="flex items-center gap-2 text-sm flex-1 text-left disabled:cursor-not-allowed"
+                        >
+                          <span
+                            className={cn(
+                              "flex h-5 w-5 items-center justify-center rounded transition-colors",
+                              checked ? "bg-teal-500 text-white" : "border-2 border-neutral-300"
+                            )}
+                          >
+                            {checked && <Check className="size-3" strokeWidth={3} />}
+                          </span>
+                          <span className="flex-1">{v.label}</span>
+                          <span className="text-xs tabular-nums text-muted-foreground">
+                            {formatTND(nb >= 150 ? v.prix[1] : v.prix[0])} / pers.
+                          </span>
+                        </button>
+                      </li>
                     );
                   })}
                 </ul>
+                {selVariants.length === 2 && mixLine && (
+                  <p className="mt-3 rounded-md bg-teal-50 ring-1 ring-teal-100 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">
+                      Mélange {selVariants.join(" + ")} — prix moyen :{" "}
+                    </span>
+                    <span className="font-semibold text-teal-700">
+                      {formatTND(mixLine.unitPrice)}
+                    </span>
+                    <span className="text-xs text-muted-foreground"> / pers.</span>
+                  </p>
+                )}
               </div>
             );
           }

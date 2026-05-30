@@ -95,15 +95,25 @@ export function renderDetailsBlocks(details: QuoteDetails) {
           )}
           {details.stations.map((s, idx) => {
             const meta = getStation(s.stationId);
+            const isMix = (s.variants?.length ?? 0) > 0;
+            const variantText = s.variants?.length
+              ? s.variants.length > 1
+                ? `Mélange : ${s.variants.join(" + ")}`
+                : s.variants[0]
+              : s.variant ?? "";
             return (
               <li key={idx} className="flex gap-2 text-sm">
                 <Check className="size-4 text-teal-600 mt-0.5 shrink-0" />
                 <span>
                   <strong>{meta?.name ?? s.stationId}</strong>
-                  {s.variant ? ` — ${s.variant}` : ""}{" "}
+                  {variantText ? ` — ${variantText}` : ""}{" "}
                   <span className="text-muted-foreground">
-                    · {s.piecesPerPerson} pièce{s.piecesPerPerson > 1 ? "s" : ""}{" "}
-                    / pers.
+                    ·{" "}
+                    {isMix
+                      ? "1 / pers."
+                      : `${s.piecesPerPerson} pièce${
+                          s.piecesPerPerson > 1 ? "s" : ""
+                        } / pers.`}
                   </span>
                 </span>
               </li>
@@ -223,8 +233,20 @@ export function renderDetailsAsText(details: QuoteDetails, nb: number): string {
       for (const s of details.stations) {
         const meta = getStation(s.stationId);
         const line = streetfoodLinePrice(s, nb);
+        let label = meta?.name ?? s.stationId;
+        if (s.variants?.length) {
+          label +=
+            s.variants.length > 1
+              ? ` — Mélange : ${s.variants.join(" + ")}`
+              : ` — ${s.variants[0]}`;
+        } else if (s.variant) {
+          label += ` — ${s.variant}`;
+        }
+        const qty = s.variants?.length
+          ? "1/pers."
+          : `${s.piecesPerPerson} pièce(s)/pers.`;
         lines.push(
-          `• ${meta?.name ?? s.stationId}${s.variant ? " — " + s.variant : ""} · ${s.piecesPerPerson} pièce(s)/pers. · ${line ? formatTND(line.total) : "—"} HT`
+          `• ${label} · ${qty} · ${line ? formatTND(line.total) : "—"} HT`
         );
       }
       return lines.join("\n");

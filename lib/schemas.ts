@@ -52,6 +52,8 @@ export const dejeunerDetailsSchema = z.object({
 export const stationSelectionSchema = z.object({
   stationId: z.string(),
   variant: z.string().optional(),
+  /** Mixable stations (Pizza, Crêpe): 1 variety, or a mix of max 2 (price = average). */
+  variants: z.array(z.string()).min(1).max(2).optional(),
   piecesPerPerson: z.coerce.number().int().min(1).max(20),
 });
 
