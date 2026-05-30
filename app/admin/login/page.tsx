@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Lock } from "lucide-react";
-import { MagicLinkForm } from "@/components/forms/MagicLinkForm";
+import { AdminLoginForm } from "@/components/forms/AdminLoginForm";
 import { BUSINESS } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -12,9 +12,11 @@ export const metadata: Metadata = {
 export default async function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, next } = await searchParams;
+  // Only allow internal admin redirects (no open-redirect via ?next=).
+  const redirectTo = next && next.startsWith("/admin") ? next : "/admin";
   return (
     <main id="main" className="min-h-screen bg-neutral-900 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
@@ -31,8 +33,7 @@ export default async function AdminLoginPage({
           </div>
           <h1 className="display-2 text-center mt-5">Admin Rezoli</h1>
           <p className="text-sm text-center text-muted-foreground mt-2">
-            Connexion réservée à l&apos;équipe. Entrez votre email pour recevoir
-            un lien sécurisé.
+            Connexion réservée à l&apos;équipe. Entrez vos identifiants.
           </p>
           {error && (
             <p
@@ -45,7 +46,7 @@ export default async function AdminLoginPage({
             </p>
           )}
           <div className="mt-6">
-            <MagicLinkForm purpose="admin" />
+            <AdminLoginForm redirectTo={redirectTo} />
           </div>
         </div>
       </div>

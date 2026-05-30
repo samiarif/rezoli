@@ -239,3 +239,10 @@ export const magicLinkSchema = z.object({
 });
 
 export type MagicLinkInput = z.infer<typeof magicLinkSchema>;
+
+export const adminLoginSchema = z.object({
+  email: z.email("Email invalide"),
+  password: z.string().min(1, "Mot de passe requis"),
+});
+
+export type AdminLoginInput = z.infer<typeof adminLoginSchema>;

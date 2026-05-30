@@ -13,8 +13,10 @@ import {
   FolderOpen,
   Pencil,
   CalendarDays,
+  LogOut,
 } from "lucide-react";
 import { cn, BUSINESS } from "@/lib/utils";
+import { logoutAdmin } from "@/app/admin/login/actions";
 
 const NAV = [
   { href: "/admin", label: "Tableau de bord", icon: LayoutDashboard, group: "Activité" },
@@ -78,15 +80,24 @@ export function AdminSidebar({ userEmail }: { userEmail?: string | null }) {
           </div>
         ))}
       </nav>
-      <div className="p-3 border-t border-white/10 text-xs">
+      <div className="p-3 border-t border-white/10 text-xs space-y-2">
         <p className="text-cream-50/60 truncate">{userEmail ?? ""}</p>
         <Link
           href="/"
-          className="mt-2 inline-flex items-center gap-1 text-cream-50/60 hover:text-amber-400"
+          className="inline-flex items-center gap-1 text-cream-50/60 hover:text-amber-400"
         >
           <ExternalLink className="size-3" />
           Voir le site
         </Link>
+        <form action={logoutAdmin}>
+          <button
+            type="submit"
+            className="inline-flex items-center gap-1 text-cream-50/60 hover:text-amber-400"
+          >
+            <LogOut className="size-3" />
+            Se déconnecter
+          </button>
+        </form>
       </div>
     </aside>
   );

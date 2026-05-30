@@ -71,7 +71,8 @@ export async function POST(req: NextRequest) {
             width,
             height,
             altText,
-            uploadedById: session.user.id ?? null,
+            // Env-based admin has no User row; uploadedBy is an optional FK.
+            uploadedById: null,
           },
         });
         return NextResponse.json({

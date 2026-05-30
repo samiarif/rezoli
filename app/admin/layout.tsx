@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { AdminSidebar } from "@/components/layout/AdminSidebar";
-import { getSession, isAdminDevBypass } from "@/lib/auth";
+import { getAdminSession, isAdminConfigured, isAdminDevBypass } from "@/lib/auth";
 
 export default async function AdminLayout({
   children,
@@ -11,10 +11,10 @@ export default async function AdminLayout({
   // Login route renders standalone; the matching path skips this layout.
   const hdrs = await headers();
   const pathname = hdrs.get("x-pathname") ?? "";
-  const isLogin = pathname.startsWith("/admin/login") || pathname.startsWith("/admin/auth");
+  const isLogin = pathname.startsWith("/admin/login");
 
-  // Without Supabase AND without dev bypass → placeholder.
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL && !isAdminDevBypass()) {
+  // No admin credentials AND no dev bypass → placeholder.
+  if (!isAdminConfigured() && !isAdminDevBypass()) {
     return (
       <main className="min-h-screen flex items-center justify-center p-8 bg-neutral-900 text-cream-50">
         <div className="max-w-md rounded-xl bg-amber-500/10 border border-amber-500/30 p-6 text-center">
@@ -22,12 +22,19 @@ export default async function AdminLayout({
             Admin non encore configuré
           </p>
           <p className="mt-2 text-sm text-cream-50/80">
-            Connectez Supabase via les variables d&apos;environnement, ou
-            définissez{" "}
+            Définissez{" "}
+            <code className="bg-amber-500/15 px-1.5 py-0.5 rounded">
+              ADMIN_EMAIL
+            </code>{" "}
+            et{" "}
+            <code className="bg-amber-500/15 px-1.5 py-0.5 rounded">
+              ADMIN_PASSWORD
+            </code>{" "}
+            dans les variables d&apos;environnement (ou{" "}
             <code className="bg-amber-500/15 px-1.5 py-0.5 rounded">
               ADMIN_DEV_BYPASS=1
             </code>{" "}
-            pour parcourir l&apos;UI sans backend.
+            pour la démo).
           </p>
         </div>
       </main>
@@ -35,7 +42,7 @@ export default async function AdminLayout({
   }
 
   if (!isLogin) {
-    const session = await getSession();
+    const session = await getAdminSession();
     if (!session || !session.isAdmin) redirect("/admin/login");
     const demo = !!session.demo;
     return (

@@ -24,7 +24,11 @@ const serverSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM_NOREPLY: z.string().optional(),
   QUOTE_TO_EMAIL: z.string().email().optional(),
-  // Admin
+  // Admin auth (self-contained email + password → signed cookie)
+  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_PASSWORD: z.string().optional(),
+  AUTH_SECRET: z.string().optional(),
+  // Legacy allowlist (still used by the Supabase-backed customer session)
   ADMIN_EMAILS: z.string().optional(),
   ADMIN_DEV_BYPASS: z.string().optional(),
   // Tax
@@ -101,6 +105,7 @@ export function envSummary() {
   return {
     db: !!env.DATABASE_URL,
     supabase: !!env.NEXT_PUBLIC_SUPABASE_URL,
+    adminAuth: !!(env.ADMIN_EMAIL && env.ADMIN_PASSWORD),
     resend: !!env.RESEND_API_KEY,
     sentry: !!env.SENTRY_DSN || !!env.NEXT_PUBLIC_SENTRY_DSN,
     ga: !!env.NEXT_PUBLIC_GA_ID,
