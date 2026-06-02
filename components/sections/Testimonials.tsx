@@ -19,7 +19,7 @@ export function Testimonials({
           <h2 className="display-2 mt-2 text-balance">{heading}</h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {testimonials.map((t, idx) => (
             <motion.figure
               key={t.id}
@@ -52,7 +52,7 @@ export function Testimonials({
               <figcaption className="mt-5 border-t border-border/60 pt-3">
                 <p className="font-medium text-sm">{t.author}</p>
                 <p className="text-xs text-muted-foreground">
-                  {t.role} · {t.company}
+                  {t.company ? `${t.role} · ${t.company}` : t.role}
                 </p>
               </figcaption>
             </motion.figure>

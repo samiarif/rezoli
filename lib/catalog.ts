@@ -105,42 +105,32 @@ export type Testimonial = {
 export const testimonials: Testimonial[] = [
   {
     id: "t1",
-    author: "Yasmine Trabelsi",
-    role: "Directrice Communication",
-    company: "Carthage Group",
+    author: "South Mediterranean University",
+    role: "Product Quality Engineer",
+    company: "",
     content:
-      "Rezoli a transformé notre lancement produit en un événement mémorable. Le service en salle était impeccable et chaque bouchée était une découverte. Nos invités en parlent encore.",
-    serviceType: "cocktails-dinatoires",
+      "Avec un service impeccable, des produits de qualité et une équipe professionnelle, Rezoli a contribué au succès de notre événement.",
+    serviceType: "general",
     rating: 5,
   },
   {
     id: "t2",
-    author: "Karim Ben Salah",
-    role: "Head of People",
-    company: "Tunisie Telecom",
+    author: "Université Sésame",
+    role: "Student Success Manager",
+    company: "",
     content:
-      "Nos pauses café hebdomadaires sont devenues un vrai moment d'équipe. Café exceptionnel, viennoiseries fraîches, livraison toujours à l'heure. On les recommande les yeux fermés.",
-    serviceType: "pauses-cafe",
+      "Je viens de découvrir Rezoli, je salue leur professionnalisme, leur sérieux et je les recommande. À Sésame, nous ne changeons pas nos partenaires.",
+    serviceType: "general",
     rating: 5,
   },
   {
     id: "t3",
-    author: "Inès Khaled",
-    role: "Office Manager",
-    company: "Banque de Tunisie",
+    author: "Ala",
+    role: "Étudiant",
+    company: "",
     content:
-      "Pour 200 collaborateurs, leurs box déjeuner sont parfaits : variés, équilibrés, et avec les options spécifiques que nous avions demandées. Un vrai partenaire de confiance.",
-    serviceType: "pauses-dejeuner",
-    rating: 5,
-  },
-  {
-    id: "t4",
-    author: "Mohamed Aziz Bachtarzi",
-    role: "CEO",
-    company: "Startup Tunis",
-    content:
-      "Les stations street-food ont fait sensation à notre soirée de lancement. Les chefs en direct apportent un vrai show. C'est une expérience, pas juste de la nourriture.",
-    serviceType: "stations-street-food",
+      "Stressé par ma soutenance, Rezoli a tout pris en main. Un service impeccable et une réussite totale !",
+    serviceType: "general",
     rating: 5,
   },
 ];
