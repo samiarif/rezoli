@@ -6,12 +6,15 @@ import { Button } from "@/components/ui/button";
 import { EventPackCategoryForm } from "@/components/admin/EventPackCategoryForm";
 import { EventPackTiersEditor } from "@/components/admin/EventPackTiersEditor";
 import { EventPackOptionsEditor } from "@/components/admin/EventPackOptionsEditor";
-import { loadEventPackCategory } from "@/lib/catalog-loader";
+import { loadAdminEventPackCategory } from "@/lib/catalog-loader";
 
 export const metadata: Metadata = {
   title: "Admin · Modifier le pack",
   robots: { index: false, follow: false },
 };
+
+// Admin edit view must reflect mutations immediately (router.refresh()).
+export const dynamic = "force-dynamic";
 
 export default async function AdminEventPackEditPage({
   params,
@@ -19,7 +22,7 @@ export default async function AdminEventPackEditPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const catMeta = await loadEventPackCategory(slug);
+  const catMeta = await loadAdminEventPackCategory(slug);
   if (!catMeta) notFound();
 
   // Try DB; fall back to code catalog so the form is browseable.
@@ -128,7 +131,7 @@ export default async function AdminEventPackEditPage({
         }}
       />
 
-      <EventPackTiersEditor tiers={tierRows} />
+      <EventPackTiersEditor tiers={tierRows} categorySlug={slug} />
 
       <EventPackOptionsEditor categorySlug={slug} initial={optionRows} />
     </div>

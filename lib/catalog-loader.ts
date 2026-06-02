@@ -284,3 +284,105 @@ export async function loadEventPackCategory(
   const list = await loadEventPackCategories();
   return list.find((c) => c.slug === slug);
 }
+
+/* ─── Admin event-pack loaders (uncached, include drafts) ──────────────
+ * The admin console needs fresh, unfiltered data: unpublished drafts must be
+ * visible, and reads must reflect mutations immediately (no Data Cache). Once
+ * the DB has any pack row it is authoritative — the code catalog is only used
+ * as the pre-seed fallback (consistent with the public loader's all-or-nothing
+ * switch). NOT wrapped in unstable_cache.
+ */
+
+export type AdminPackCategoryRow = {
+  slug: string;
+  name: string;
+  badge: string;
+  tagline: string;
+  published: boolean;
+  tierCount: number;
+  optionCount: number;
+};
+
+export async function loadAdminEventPackCategories(): Promise<
+  AdminPackCategoryRow[]
+> {
+  if (process.env.DATABASE_URL) {
+    try {
+      const { prisma } = await import("./prisma");
+      const rows = await prisma.eventPackCategory.findMany({
+        orderBy: { order: "asc" },
+        include: { _count: { select: { tiers: true, options: true } } },
+      });
+      if (rows.length) {
+        return rows.map((r) => ({
+          slug: r.slug,
+          name: r.name,
+          badge: r.badge,
+          tagline: r.tagline,
+          published: r.published,
+          tierCount: r._count.tiers,
+          optionCount: r._count.options,
+        }));
+      }
+    } catch (err) {
+      console.error("[catalog-loader] admin event packs load failed", err);
+    }
+  }
+  const { eventPackCategories } = await import("./event-packs-catalog");
+  return eventPackCategories.map((c) => ({
+    slug: c.slug,
+    name: c.name,
+    badge: c.badge,
+    tagline: c.tagline,
+    published: true,
+    tierCount: c.tiers.length,
+    optionCount: c.options.length,
+  }));
+}
+
+export async function loadAdminEventPackCategory(
+  slug: string
+): Promise<PackCategory | undefined> {
+  if (process.env.DATABASE_URL) {
+    try {
+      const { prisma } = await import("./prisma");
+      const count = await prisma.eventPackCategory.count();
+      if (count > 0) {
+        const r = await prisma.eventPackCategory.findUnique({
+          where: { slug },
+          include: {
+            tiers: { orderBy: { order: "asc" } },
+            options: { orderBy: { order: "asc" } },
+          },
+        });
+        if (!r) return undefined;
+        return {
+          slug: r.slug as PackCategory["slug"],
+          name: r.name,
+          description: r.description,
+          badge: r.badge,
+          tagline: r.tagline,
+          guestCount: r.guestCountConfig as PackCategory["guestCount"],
+          tiers: r.tiers.map((t) => ({
+            id: t.tierKey as PackCategory["tiers"][number]["id"],
+            badge: t.badge,
+            name: t.name,
+            description: t.description,
+            content: t.content as PackCategory["tiers"][number]["content"],
+            price: t.price as PackCategory["tiers"][number]["price"],
+          })),
+          options: r.options.map((o) => ({
+            id: o.optionKey,
+            name: o.name,
+            description: o.description ?? undefined,
+            priceHT: Number(o.priceHT),
+          })),
+        };
+      }
+    } catch (err) {
+      console.error("[catalog-loader] admin event pack load failed", err);
+    }
+  }
+  const { eventPackCategories } = await import("./event-packs-catalog");
+  return eventPackCategories.find((c) => c.slug === slug);
+}
