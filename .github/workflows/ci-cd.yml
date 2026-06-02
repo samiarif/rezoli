@@ -157,7 +157,7 @@ jobs:
                   username: ${{ secrets.VPS_USER }}
                   key: ${{ secrets.VPS_SSH_KEY }}
                   port: ${{ secrets.VPS_PORT }}
-                  envs: IMAGE_TAG,GITHUB_REPOSITORY_OWNER,ADMIN_EMAIL,ADMIN_PASSWORD
+                  envs: IMAGE_TAG,GITHUB_REPOSITORY_OWNER,ADMIN_EMAIL,ADMIN_PASSWORD,SMTP_HOST,SMTP_PORT,SMTP_USER,SMTP_PASSWORD,SMTP_SECURE,SMTP_TLS_REJECT_UNAUTHORIZED,EMAIL_FROM_NOREPLY,QUOTE_TO_EMAIL,CONTACT_TO_EMAIL
                   script: |
                       set -e
 
@@ -179,6 +179,23 @@ jobs:
                         printf 'ADMIN_EMAIL=%s\nADMIN_PASSWORD=%s\n' "$ADMIN_EMAIL" "$ADMIN_PASSWORD" >> .env.production
                       fi
 
+                      # Upsert SMTP / email config from GitHub secrets. No-op until SMTP_HOST is set.
+                      if [ -n "$SMTP_HOST" ]; then
+                        touch .env.production
+                        sed -i '/^SMTP_HOST=/d; /^SMTP_PORT=/d; /^SMTP_USER=/d; /^SMTP_PASSWORD=/d; /^SMTP_SECURE=/d; /^SMTP_TLS_REJECT_UNAUTHORIZED=/d; /^EMAIL_FROM_NOREPLY=/d; /^QUOTE_TO_EMAIL=/d; /^CONTACT_TO_EMAIL=/d' .env.production
+                        {
+                          printf 'SMTP_HOST=%s\n' "$SMTP_HOST"
+                          printf 'SMTP_PORT=%s\n' "${SMTP_PORT:-465}"
+                          printf 'SMTP_USER=%s\n' "$SMTP_USER"
+                          printf 'SMTP_PASSWORD=%s\n' "$SMTP_PASSWORD"
+                          printf 'SMTP_SECURE=%s\n' "${SMTP_SECURE:-true}"
+                          printf 'SMTP_TLS_REJECT_UNAUTHORIZED=%s\n' "${SMTP_TLS_REJECT_UNAUTHORIZED:-true}"
+                          printf 'EMAIL_FROM_NOREPLY=%s\n' "${EMAIL_FROM_NOREPLY:-Rezoli <sales@rezoli.tn>}"
+                          printf 'QUOTE_TO_EMAIL=%s\n' "${QUOTE_TO_EMAIL:-$SMTP_USER}"
+                          printf 'CONTACT_TO_EMAIL=%s\n' "${CONTACT_TO_EMAIL:-${QUOTE_TO_EMAIL:-$SMTP_USER}}"
+                        } >> .env.production
+                      fi
+
                       docker compose pull rezoli
                       docker compose up -d --remove-orphans
                       docker image prune -a -f || true
@@ -189,3 +206,12 @@ jobs:
                   IMAGE_TAG: sha-${{ github.sha }}
                   ADMIN_EMAIL: ${{ secrets.ADMIN_EMAIL }}
                   ADMIN_PASSWORD: ${{ secrets.ADMIN_PASSWORD }}
+                  SMTP_HOST: ${{ secrets.SMTP_HOST }}
+                  SMTP_PORT: ${{ secrets.SMTP_PORT }}
+                  SMTP_USER: ${{ secrets.SMTP_USER }}
+                  SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
+                  SMTP_SECURE: ${{ secrets.SMTP_SECURE }}
+                  SMTP_TLS_REJECT_UNAUTHORIZED: ${{ secrets.SMTP_TLS_REJECT_UNAUTHORIZED }}
+                  EMAIL_FROM_NOREPLY: ${{ secrets.EMAIL_FROM_NOREPLY }}
+                  QUOTE_TO_EMAIL: ${{ secrets.QUOTE_TO_EMAIL }}
+                  CONTACT_TO_EMAIL: ${{ secrets.CONTACT_TO_EMAIL }}

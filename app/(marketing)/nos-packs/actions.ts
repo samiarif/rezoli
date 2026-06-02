@@ -7,6 +7,7 @@ import { totalsFromSubtotal } from "@/lib/service-pricing";
 import { renderDetailsAsText } from "@/components/service-flow/details-render";
 import type { QuoteDetails } from "@/lib/schemas";
 import { upsertContact, createDeal } from "@/lib/hubspot";
+import { sendEmail } from "@/lib/email";
 
 const phoneRegex = /^\+?[0-9\s().-]{8,20}$/;
 
@@ -204,20 +205,10 @@ async function sendEmails(
   details: QuoteDetails,
   totals: { subtotalHT: number; tvaRate: number; tvaAmount: number; totalTTC: number }
 ) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log("[email:dev] would send pack emails for", ref);
-    return;
-  }
-  try {
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const adminEmail = process.env.QUOTE_TO_EMAIL ?? "sales@rezoli.tn";
-    const from =
-      process.env.EMAIL_FROM_NOREPLY ?? "Rezoli <no-reply@rezoli.tn>";
+  const adminEmail = process.env.QUOTE_TO_EMAIL ?? "sales@rezoli.tn";
+  const detailsText = renderDetailsAsText(details, data.guestCount);
 
-    const detailsText = renderDetailsAsText(details, data.guestCount);
-
-    const adminBody = `
+  const adminBody = `
       <h1 style="font-family:Georgia,serif;color:#1d8080">Nouvelle commande pack ${ref}</h1>
       <p><strong>${data.firstName} ${data.lastName}</strong> — ${data.email} — ${data.phone}${data.company ? " — " + data.company : ""}</p>
       <p>Pack : <strong>${packName}</strong> · ${categoryName}</p>
@@ -227,28 +218,24 @@ async function sendEmails(
       ${data.message ? `<p>Message : ${data.message}</p>` : ""}
     `;
 
-    const clientBody = `
+  const clientBody = `
       <h1 style="font-family:Georgia,serif;color:#1d8080">Merci ${data.firstName} !</h1>
       <p>Nous avons bien reçu votre demande pour le pack <strong>${packName}</strong> (référence ${ref}).</p>
       <p>Notre équipe revient vers vous sous 24 heures ouvrées pour finaliser votre commande.</p>
       <p style="color:#666;font-size:12px">— L'équipe Rezoli</p>
     `;
 
-    await Promise.all([
-      resend.emails.send({
-        from,
-        to: adminEmail,
-        subject: `[Rezoli] Pack ${ref} · ${packName} · ${data.guestCount} pers.`,
-        html: adminBody,
-      }),
-      resend.emails.send({
-        from,
-        to: data.email,
-        subject: `Votre commande Rezoli ${ref}`,
-        html: clientBody,
-      }),
-    ]);
-  } catch (err) {
-    console.error("[pack:email] failed", err);
-  }
+  await Promise.all([
+    sendEmail({
+      to: adminEmail,
+      replyTo: data.email,
+      subject: `[Rezoli] Pack ${ref} · ${packName} · ${data.guestCount} pers.`,
+      html: adminBody,
+    }),
+    sendEmail({
+      to: data.email,
+      subject: `Votre commande Rezoli ${ref}`,
+      html: clientBody,
+    }),
+  ]);
 }
