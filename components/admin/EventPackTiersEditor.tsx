@@ -1,13 +1,18 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Save, ChevronDown, Plus, X } from "lucide-react";
+import { Save, ChevronDown, Plus, X, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label } from "@/components/ui/input";
 import { StringListEditor } from "@/components/admin/StringListEditor";
 import { cn } from "@/lib/utils";
-import { updateTier } from "@/app/admin/catalog/event-packs/actions";
+import {
+  updateTier,
+  createTier,
+  deleteTier,
+} from "@/app/admin/catalog/event-packs/actions";
 
 type Content = {
   boissons?: string[];
@@ -33,25 +38,72 @@ type Tier = {
   order: number;
 };
 
-export function EventPackTiersEditor({ tiers }: { tiers: Tier[] }) {
+export function EventPackTiersEditor({
+  tiers,
+  categorySlug,
+}: {
+  tiers: Tier[];
+  categorySlug: string;
+}) {
+  const router = useRouter();
+  const [adding, setAdding] = React.useState(false);
+
+  async function addTier() {
+    setAdding(true);
+    try {
+      const result = await createTier(categorySlug);
+      if (result.ok) {
+        toast.success("Formule ajoutée");
+        router.refresh();
+      } else {
+        toast.error(result.message ?? "Échec");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur");
+    } finally {
+      setAdding(false);
+    }
+  }
+
   return (
     <section className="rounded-xl bg-background ring-1 ring-border p-6">
-      <header className="mb-5">
-        <h2 className="font-display text-lg font-semibold">Formules</h2>
-        <p className="text-xs text-muted-foreground mt-1">
-          {tiers.length} formules. Contenu et grille tarifaire personnalisables.
-        </p>
+      <header className="mb-5 flex items-center justify-between gap-3">
+        <div>
+          <h2 className="font-display text-lg font-semibold">Formules</h2>
+          <p className="text-xs text-muted-foreground mt-1">
+            {tiers.length} formules. Contenu et grille tarifaire
+            personnalisables.
+          </p>
+        </div>
+        <Button onClick={addTier} variant="outline" size="sm" disabled={adding}>
+          <Plus className="size-4" />{" "}
+          {adding ? "Ajout…" : "Ajouter une formule"}
+        </Button>
       </header>
-      <ul className="space-y-3">
-        {tiers.map((t) => (
-          <TierRow key={t.id} initial={t} />
-        ))}
-      </ul>
+      {tiers.length === 0 ? (
+        <p className="text-sm text-muted-foreground">
+          Aucune formule. Cliquez sur « Ajouter une formule » pour commencer.
+        </p>
+      ) : (
+        <ul className="space-y-3">
+          {tiers.map((t) => (
+            <TierRow key={t.id} initial={t} categorySlug={categorySlug} />
+          ))}
+        </ul>
+      )}
     </section>
   );
 }
 
-function TierRow({ initial }: { initial: Tier }) {
+function TierRow({
+  initial,
+  categorySlug,
+}: {
+  initial: Tier;
+  categorySlug: string;
+}) {
+  const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const [state, setState] = React.useState(initial);
   const [busy, setBusy] = React.useState(false);
@@ -60,7 +112,8 @@ function TierRow({ initial }: { initial: Tier }) {
     setBusy(true);
     try {
       const result = await updateTier({
-        tierId: state.id,
+        categorySlug,
+        tierKey: state.tierKey,
         badge: state.badge,
         name: state.name,
         description: state.description,
@@ -70,6 +123,25 @@ function TierRow({ initial }: { initial: Tier }) {
       });
       if (result.ok) toast.success("Formule enregistrée");
       else toast.error(result.message ?? "Échec");
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`Supprimer la formule « ${state.name} » ?`)) return;
+    setBusy(true);
+    try {
+      const result = await deleteTier(categorySlug, state.tierKey);
+      if (result.ok) {
+        toast.success("Formule supprimée");
+        router.refresh();
+      } else {
+        toast.error(result.message ?? "Échec");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Erreur");
@@ -178,7 +250,16 @@ function TierRow({ initial }: { initial: Tier }) {
             onChange={(price) => setState({ ...state, price })}
           />
 
-          <div className="flex justify-end">
+          <div className="flex justify-between items-center">
+            <Button
+              onClick={remove}
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              className="text-danger hover:text-danger"
+            >
+              <Trash2 className="size-4" /> Supprimer
+            </Button>
             <Button onClick={save} variant="solid" disabled={busy}>
               <Save className="size-4" />
               {busy ? "Enregistrement…" : "Enregistrer la formule"}

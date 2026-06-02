@@ -1,12 +1,18 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Save } from "lucide-react";
+import { Save, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
-import { updateCategoryMeta } from "@/app/admin/catalog/event-packs/actions";
+import { slugify } from "@/lib/slugify";
+import {
+  updateCategoryMeta,
+  createCategory,
+  deleteCategory,
+} from "@/app/admin/catalog/event-packs/actions";
 
 type GuestCountConfig =
   | { kind: "fixed"; value: number; label: string }
@@ -23,16 +29,69 @@ type Props = {
   published: boolean;
 };
 
-export function EventPackCategoryForm({ initial }: { initial: Props }) {
+export function EventPackCategoryForm({
+  initial,
+  mode = "edit",
+}: {
+  initial: Props;
+  mode?: "create" | "edit";
+}) {
+  const router = useRouter();
   const [state, setState] = React.useState(initial);
   const [busy, setBusy] = React.useState(false);
+  // In create mode the slug auto-follows the name until the user edits it.
+  const [slugDirty, setSlugDirty] = React.useState(false);
+
+  function setName(name: string) {
+    setState((s) => ({
+      ...s,
+      name,
+      slug: mode === "create" && !slugDirty ? slugify(name) : s.slug,
+    }));
+  }
 
   async function save() {
     setBusy(true);
     try {
-      const result = await updateCategoryMeta(state);
-      if (result.ok) toast.success("Catégorie enregistrée");
-      else toast.error(result.message ?? "Échec");
+      if (mode === "create") {
+        const result = await createCategory(state);
+        if (result.ok) {
+          toast.success("Pack créé");
+          router.push(`/admin/catalog/event-packs/${result.slug}`);
+        } else {
+          toast.error(result.message ?? "Échec");
+        }
+      } else {
+        const result = await updateCategoryMeta(state);
+        if (result.ok) toast.success("Catégorie enregistrée");
+        else toast.error(result.message ?? "Échec");
+      }
+    } catch (err) {
+      console.error(err);
+      toast.error("Erreur");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove() {
+    if (
+      !window.confirm(
+        `Supprimer le pack « ${state.name} » et toutes ses formules ? Cette action est irréversible.`
+      )
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const result = await deleteCategory(state.slug);
+      if (result.ok) {
+        toast.success("Pack supprimé");
+        router.push("/admin/catalog/event-packs");
+        router.refresh();
+      } else {
+        toast.error(result.message ?? "Échec");
+      }
     } catch (err) {
       console.error(err);
       toast.error("Erreur");
@@ -43,19 +102,30 @@ export function EventPackCategoryForm({ initial }: { initial: Props }) {
 
   return (
     <section className="rounded-xl bg-background ring-1 ring-border p-6">
-      <header className="flex items-center justify-between mb-5">
+      <header className="flex items-center justify-between gap-3 mb-5">
         <h2 className="font-display text-lg font-semibold">Catégorie</h2>
-        <Button onClick={save} variant="solid" size="sm" disabled={busy}>
-          <Save className="size-4" /> Enregistrer
-        </Button>
+        <div className="flex items-center gap-2">
+          {mode === "edit" && (
+            <Button
+              onClick={remove}
+              variant="ghost"
+              size="sm"
+              disabled={busy}
+              className="text-danger hover:text-danger"
+            >
+              <Trash2 className="size-4" /> Supprimer
+            </Button>
+          )}
+          <Button onClick={save} variant="solid" size="sm" disabled={busy}>
+            <Save className="size-4" />{" "}
+            {mode === "create" ? "Créer le pack" : "Enregistrer"}
+          </Button>
+        </div>
       </header>
       <div className="grid gap-5 md:grid-cols-2">
         <div>
           <Label required>Nom</Label>
-          <Input
-            value={state.name}
-            onChange={(e) => setState({ ...state, name: e.target.value })}
-          />
+          <Input value={state.name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
           <Label required>Badge</Label>
@@ -64,6 +134,25 @@ export function EventPackCategoryForm({ initial }: { initial: Props }) {
             onChange={(e) => setState({ ...state, badge: e.target.value })}
           />
         </div>
+
+        {mode === "create" && (
+          <div className="md:col-span-2">
+            <Label required>Slug (URL)</Label>
+            <Input
+              value={state.slug}
+              onChange={(e) => {
+                setSlugDirty(true);
+                setState({ ...state, slug: e.target.value });
+              }}
+              placeholder="ex: mariage"
+            />
+            <p className="text-[11px] text-muted-foreground mt-1">
+              /nos-packs/{state.slug || "…"} — minuscules, sans espaces ni
+              accents.
+            </p>
+          </div>
+        )}
+
         <div className="md:col-span-2">
           <Label required>Description</Label>
           <Textarea
@@ -95,7 +184,11 @@ export function EventPackCategoryForm({ initial }: { initial: Props }) {
                 onChange={() =>
                   setState({
                     ...state,
-                    guestCountConfig: { kind: "fixed", value: 30, label: "~ 30 personnes" },
+                    guestCountConfig: {
+                      kind: "fixed",
+                      value: 30,
+                      label: "~ 30 personnes",
+                    },
                   })
                 }
               />
