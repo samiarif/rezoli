@@ -20,10 +20,16 @@ const serverSchema = z.object({
   DIRECT_URL: z.string().url().optional(),
   // Supabase (server-only)
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  // Email
-  RESEND_API_KEY: z.string().optional(),
+  // Email (SMTP)
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  SMTP_SECURE: z.string().optional(),
+  SMTP_TLS_REJECT_UNAUTHORIZED: z.string().optional(),
   EMAIL_FROM_NOREPLY: z.string().optional(),
   QUOTE_TO_EMAIL: z.string().email().optional(),
+  CONTACT_TO_EMAIL: z.string().email().optional(),
   // Admin
   ADMIN_EMAILS: z.string().optional(),
   ADMIN_DEV_BYPASS: z.string().optional(),
@@ -101,7 +107,7 @@ export function envSummary() {
   return {
     db: !!env.DATABASE_URL,
     supabase: !!env.NEXT_PUBLIC_SUPABASE_URL,
-    resend: !!env.RESEND_API_KEY,
+    smtp: !!(env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASSWORD),
     sentry: !!env.SENTRY_DSN || !!env.NEXT_PUBLIC_SENTRY_DSN,
     ga: !!env.NEXT_PUBLIC_GA_ID,
     hubspot: !!env.HUBSPOT_API_KEY,

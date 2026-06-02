@@ -9,29 +9,115 @@ export type SendEmailInput = {
   to: string;
   subject: string;
   html: string;
+  /** Plain-text alternative. Auto-derived from `html` when omitted. */
+  text?: string;
+  /** Reply-To header — e.g. set to the visitor's address on contact mails. */
+  replyTo?: string;
 };
 
 export type SendEmailResult = { ok: true } | { ok: false; reason: string };
 
+/**
+ * SMTP transport configuration, read from the environment:
+ *   SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD, SMTP_SECURE
+ * Returns `null` when the mailbox isn't configured (e.g. local dev) so
+ * callers can degrade gracefully instead of throwing.
+ */
+function smtpConfig() {
+  const host = process.env.SMTP_HOST;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASSWORD;
+  if (!host || !user || !pass) return null;
+  const port = Number(process.env.SMTP_PORT ?? 587);
+  // `secure: true` ⇒ implicit TLS (port 465). Otherwise STARTTLS (587/25).
+  const secure =
+    process.env.SMTP_SECURE != null
+      ? /^(1|true|yes)$/i.test(process.env.SMTP_SECURE)
+      : port === 465;
+  // Shared/cPanel/Plesk hosts sometimes serve a TLS cert for the server
+  // hostname rather than the mail domain, which fails strict verification.
+  // Allow opting out with SMTP_TLS_REJECT_UNAUTHORIZED=false; default is strict.
+  const rejectUnauthorized = !/^(0|false|no)$/i.test(
+    process.env.SMTP_TLS_REJECT_UNAUTHORIZED ?? ""
+  );
+  return {
+    host,
+    port,
+    secure,
+    auth: { user, pass },
+    tls: { rejectUnauthorized },
+  };
+}
+
+// Reuse one pooled transporter across invocations (a long-lived server keeps
+// the SMTP connection warm). Created lazily on the first real send. The type
+// is inferred from the builder so it matches nodemailer's `pool: true` overload.
+async function buildTransport() {
+  const config = smtpConfig();
+  if (!config) return null;
+  const { createTransport } = await import("nodemailer");
+  return createTransport({ pool: true, ...config });
+}
+
+type Mailer = Awaited<ReturnType<typeof buildTransport>>;
+let transporter: Mailer = null;
+
+async function getTransport(): Promise<Mailer> {
+  if (transporter) return transporter;
+  transporter = await buildTransport();
+  return transporter;
+}
+
+/** Crude HTML→text for the multipart text/plain alternative (deliverability). */
+function htmlToText(html: string): string {
+  return html
+    .replace(/<style[\s\S]*?<\/style>/gi, "")
+    .replace(/<br\s*\/?>(?=)/gi, "\n")
+    .replace(/<\/(p|h1|h2|h3|tr|div)>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n\s*\n/g, "\n\n")
+    .trim();
+}
+
+/**
+ * Send a transactional email through the configured SMTP mailbox.
+ * No-ops (logs a preview, returns `{ ok: false, reason: "no-smtp-config" }`)
+ * when SMTP env vars are absent, so dev and previews never crash.
+ */
 export async function sendEmail({
   to,
   subject,
   html,
+  text,
+  replyTo,
 }: SendEmailInput): Promise<SendEmailResult> {
-  if (!process.env.RESEND_API_KEY) {
-    console.log("[email:dev]", { to, subject, htmlPreview: html.slice(0, 200) });
-    return { ok: false, reason: "no-resend-key" };
+  const transport = await getTransport();
+  if (!transport) {
+    console.log("[email:dev] SMTP not configured — skipping send", {
+      to,
+      subject,
+      htmlPreview: html.slice(0, 200),
+    });
+    return { ok: false, reason: "no-smtp-config" };
   }
+  const from =
+    process.env.EMAIL_FROM_NOREPLY ??
+    process.env.SMTP_USER ??
+    "Rezoli <no-reply@rezoli.tn>";
   try {
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const from =
-      process.env.EMAIL_FROM_NOREPLY ?? "Rezoli <no-reply@rezoli.tn>";
-    const r = await resend.emails.send({ from, to, subject, html });
-    if (r.error) {
-      console.error("[email] send error", r.error);
-      return { ok: false, reason: r.error.message };
-    }
+    await transport.sendMail({
+      from,
+      to,
+      subject,
+      html,
+      text: text ?? htmlToText(html),
+      replyTo,
+    });
     return { ok: true };
   } catch (err) {
     console.error("[email] send failed", err);

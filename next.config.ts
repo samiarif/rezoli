@@ -21,6 +21,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
   output: "standalone",
+  // nodemailer uses Node built-ins and dynamic requires — keep it external to
+  // the server bundle so it's required natively at runtime (lib/email.ts).
+  serverExternalPackages: ["nodemailer"],
   experimental: {
     optimizePackageImports: ["lucide-react", "framer-motion"],
   },

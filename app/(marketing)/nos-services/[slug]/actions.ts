@@ -16,6 +16,7 @@ import {
 import { getServiceMeta } from "@/lib/service-catalog";
 import { renderDetailsAsText } from "@/components/service-flow/details-render";
 import { upsertContact, createDeal } from "@/lib/hubspot";
+import { sendEmail } from "@/lib/email";
 
 export type SubmitResult =
   | { ok: true; ref: string }
@@ -316,20 +317,10 @@ async function sendEmails(
     unitPriceHT: number | null;
   }
 ) {
-  if (!process.env.RESEND_API_KEY) {
-    console.log("[email:dev] would send emails for", ref);
-    return;
-  }
-  try {
-    const { Resend } = await import("resend");
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    const adminEmail = process.env.QUOTE_TO_EMAIL ?? "sales@rezoli.tn";
-    const from =
-      process.env.EMAIL_FROM_NOREPLY ?? "Rezoli <no-reply@rezoli.tn>";
+  const adminEmail = process.env.QUOTE_TO_EMAIL ?? "sales@rezoli.tn";
+  const detailsText = renderDetailsAsText(data.details, data.guestCount);
 
-    const detailsText = renderDetailsAsText(data.details, data.guestCount);
-
-    const adminBody = `
+  const adminBody = `
       <h1 style="font-family:Georgia,serif;color:#1d8080">Nouvelle demande ${ref}</h1>
       <p><strong>${data.firstName} ${data.lastName}</strong> — ${data.email} — ${data.phone}${data.company ? " — " + data.company : ""}</p>
       <p>Service : <strong>${serviceName}</strong></p>
@@ -339,28 +330,24 @@ async function sendEmails(
       ${data.message ? `<p>Message : ${data.message}</p>` : ""}
     `;
 
-    const clientBody = `
+  const clientBody = `
       <h1 style="font-family:Georgia,serif;color:#1d8080">Merci ${data.firstName} !</h1>
       <p>Nous avons bien reçu votre demande de devis <strong>${ref}</strong>.</p>
       <p>Notre équipe revient vers vous sous 24 heures ouvrées avec une proposition personnalisée.</p>
       <p style="color:#666;font-size:12px">— L'équipe Rezoli</p>
     `;
 
-    await Promise.all([
-      resend.emails.send({
-        from,
-        to: adminEmail,
-        subject: `[Rezoli] ${ref} · ${serviceName} · ${data.guestCount} pers.`,
-        html: adminBody,
-      }),
-      resend.emails.send({
-        from,
-        to: data.email,
-        subject: `Votre demande Rezoli ${ref}`,
-        html: clientBody,
-      }),
-    ]);
-  } catch (err) {
-    console.error("[email] failed", err);
-  }
+  await Promise.all([
+    sendEmail({
+      to: adminEmail,
+      replyTo: data.email,
+      subject: `[Rezoli] ${ref} · ${serviceName} · ${data.guestCount} pers.`,
+      html: adminBody,
+    }),
+    sendEmail({
+      to: data.email,
+      subject: `Votre demande Rezoli ${ref}`,
+      html: clientBody,
+    }),
+  ]);
 }

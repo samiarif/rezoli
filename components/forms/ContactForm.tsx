@@ -8,10 +8,41 @@ import { Button } from "@/components/ui/button";
 import { Input, Textarea, Label } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FieldError } from "@/components/ui/field-error";
-import {
-  submitContactMessage,
-  type ContactActionState,
-} from "@/app/(marketing)/contact/actions";
+type ContactActionState = {
+  ok: boolean;
+  message?: string;
+  errors?: Record<string, string>;
+};
+
+// Submits to the Route Handler at app/api/contact/route.ts (validate → persist
+// → email the owner). Shaped as a useActionState reducer so the form UX and the
+// <SubmitButton> pending state below stay exactly the same.
+async function submitContactMessage(
+  _prev: ContactActionState,
+  formData: FormData
+): Promise<ContactActionState> {
+  const payload = {
+    name: String(formData.get("name") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    phone: String(formData.get("phone") ?? "") || undefined,
+    subject: String(formData.get("subject") ?? ""),
+    message: String(formData.get("message") ?? ""),
+    consentRgpd: formData.get("consentRgpd") === "on",
+  };
+  try {
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    return (await res.json()) as ContactActionState;
+  } catch {
+    return {
+      ok: false,
+      message: "Une erreur réseau est survenue. Merci de réessayer.",
+    };
+  }
+}
 
 function SubmitButton() {
   const { pending } = useFormStatus();

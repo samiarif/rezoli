@@ -5,7 +5,7 @@ Production platform for a Tunisian B2B catering business. Next.js 16 (App Router
 ## What's in the box
 
 - **Public marketing site** in French — home, services + 4 service detail pages, packs (with audience tabs), partners, about, contact (DB-persisted), become-partner (DB-persisted), legal pages.
-- **Cart-based quote flow** (`/panier`): users add services/packs, edit quantities, then go through a 3-step `/devis` form (event details → contact → review) that submits to Postgres via a Server Action and emails customer + admin via Resend.
+- **Cart-based quote flow** (`/panier`): users add services/packs, edit quantities, then go through a 3-step `/devis` form (event details → contact → review) that submits to Postgres via a Server Action and emails customer + admin via SMTP (nodemailer).
 - **Customer area** at `/compte` with magic-link login: list of your quotes, status timeline, reorder.
 - **Admin dashboard** at `/admin` (email allowlist): KPI dashboard, quote table with filter/search, quote detail with status workflow + internal notes + history, partner applications, contact messages, clients.
 - **SEO**: per-route metadata, JSON-LD (`FoodEstablishment`, `Service`, `BreadcrumbList`, `FAQPage`), sitemap, robots, branded `@vercel/og` social image.
@@ -16,7 +16,7 @@ Production platform for a Tunisian B2B catering business. Next.js 16 (App Router
 
 ```bash
 pnpm install
-cp .env.example .env.local           # fill in Supabase, Resend, ADMIN_EMAILS
+cp .env.example .env.local           # fill in Supabase, SMTP, ADMIN_EMAILS
 pnpm db:generate                     # generate Prisma client
 pnpm db:migrate                      # run migrations against Supabase Postgres
 pnpm dev                             # http://localhost:3000
@@ -40,13 +40,13 @@ pnpm lint
 See `.env.example`. The site degrades gracefully when env is missing:
 - No Supabase → admin / `/compte` show a "not yet activated" placeholder; site still works.
 - No `DATABASE_URL` → quote submissions log to the server console.
-- No `RESEND_API_KEY` → emails are skipped (logged).
+- No `SMTP_HOST` / `SMTP_USER` / `SMTP_PASSWORD` → emails are skipped (logged).
 
 ## Domain wiring (production)
 
 - Vercel project pointed at `rezoli.tn`.
-- DNS for Resend: SPF / DKIM / DMARC records on `rezoli.tn`.
-- Supabase project with Auth → SMTP → Resend (override default sender) and a `quotes` storage bucket for final-quote PDFs.
+- DNS for the sending domain: SPF / DKIM / DMARC records on `rezoli.tn` so outbound SMTP mail isn't flagged as spam.
+- Supabase project with a `quotes` storage bucket for final-quote PDFs.
 - `ADMIN_EMAILS` includes the email(s) allowed into `/admin`.
 
 ## Important paths

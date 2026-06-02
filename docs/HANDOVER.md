@@ -1,7 +1,7 @@
 # Rezoli — Handover technique
 
 > **Cible** : développeur·se en charge du déploiement et de la maintenance de la plateforme Rezoli.
-> **État** : application complète, prête à déployer. Reste à brancher les services tiers (Supabase, Resend, HubSpot, Vercel) et le domaine `rezoli.tn`.
+> **État** : application complète, prête à déployer. Reste à brancher les services tiers (Supabase, SMTP, HubSpot, Vercel) et le domaine `rezoli.tn`.
 > **Mode démo** : l'app tourne sans aucune dépendance externe via `ADMIN_DEV_BYPASS=1` (voir §10).
 
 ---
@@ -18,7 +18,7 @@
 | Auth | Supabase Auth (magic links) | — |
 | Storage | Supabase Storage (bucket `media`) | — |
 | Editor rich-text | TipTap | **v3** |
-| Email transactionnel | Resend | v6 |
+| Email transactionnel | SMTP (nodemailer) | v8 |
 | CRM | HubSpot v3 REST API | (fetch direct, pas de SDK) |
 | Observability | Sentry | v10 |
 | Analytics | GA4 (gtag.js, consent-gated) | — |
@@ -111,7 +111,7 @@ rezoli/
 │   ├── catalog-loader.ts         # DB-first reads, code fallback
 │   ├── consent.ts                # GDPR consent cookie + event bus
 │   ├── demo-fixtures.ts          # Données démo (blog, realisations, devis, partners, messages)
-│   ├── email.ts                  # Resend wrapper + builders (acceptance, rejection, status)
+│   ├── email.ts                  # SMTP (nodemailer) wrapper + builders (acceptance, rejection, status)
 │   ├── env.ts                    # Zod env validation
 │   ├── event-packs-catalog.ts    # Catalogue packs (soutenance, soiree-bac, fetes-fin-annee)
 │   ├── hubspot.ts                # upsertContact, createDeal, updateDealStage
@@ -219,13 +219,18 @@ Scripts disponibles :
 | `DATABASE_URL` | Supabase → Project Settings → Database → Connection string (mode **Pooler**, 6543) |
 | `DIRECT_URL` | Idem mais en mode **Direct** (5432) — utilisé par Prisma migrate |
 
-### Bloc « Email » (requis pour notifications)
+### Bloc « Email » (SMTP, requis pour notifications)
 
 | Var | Exemple |
 |---|---|
-| `RESEND_API_KEY` | `re_xxx` (dashboard Resend → API Keys) |
-| `EMAIL_FROM_NOREPLY` | `Rezoli <no-reply@rezoli.tn>` (domaine vérifié dans Resend) |
+| `SMTP_HOST` | `smtp.gmail.com` · `smtp.office365.com` · `ssl0.ovh.net` |
+| `SMTP_PORT` | `465` (TLS implicite) ou `587` (STARTTLS) |
+| `SMTP_USER` | adresse du compte d'envoi, ex. `contact@rezoli.tn` |
+| `SMTP_PASSWORD` | mot de passe du compte (App Password pour Gmail/Workspace) |
+| `SMTP_SECURE` | `true` pour le port 465, `false` pour 587 |
+| `EMAIL_FROM_NOREPLY` | `Rezoli <no-reply@rezoli.tn>` (défaut : `SMTP_USER`) |
 | `QUOTE_TO_EMAIL` | `contact@rezoli.tn` (où arrivent les devis admin) |
+| `CONTACT_TO_EMAIL` | `contact@rezoli.tn` (messages du formulaire de contact) |
 
 ### Bloc « Admin » (toujours requis)
 
@@ -365,11 +370,11 @@ L'admin allowlist (`ADMIN_EMAILS`) reste l'autorité finale — vérifiée dans 
 
 ## 8. Services tiers
 
-### 8.1 Resend (email transactionnel)
-1. Créer un compte sur resend.com
-2. Vérifier le domaine `rezoli.tn` (DNS records SPF + DKIM)
-3. Générer une API key → `RESEND_API_KEY`
-4. Templates utilisés (tous générés à la volée par `lib/email.ts`) :
+### 8.1 SMTP (email transactionnel)
+1. Récupérer les identifiants SMTP de la boîte d'envoi (Gmail/Workspace, Outlook/M365, OVH, cPanel…)
+2. Configurer SPF + DKIM + DMARC sur `rezoli.tn` pour que les mails ne tombent pas en spam
+3. Renseigner `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASSWORD` / `SMTP_SECURE`
+4. Templates utilisés (tous générés à la volée par `lib/email.ts`, envoyés via nodemailer) :
    - Confirmation client (post-submit)
    - Notification admin (post-submit)
    - Status change (REVIEWED, QUOTE_SENT, CONFIRMED, COMPLETED, CANCELLED)
@@ -422,7 +427,7 @@ Sans HubSpot configuré, `hubspotEnabled()` renvoie `false` et toutes les foncti
 - [ ] `pnpm exec prisma migrate deploy` exécuté sur la DB de prod (via Vercel CLI ou script de post-build)
 - [ ] `pnpm db:seed` exécuté **une fois**
 - [ ] Bucket Supabase `media` créé + policies
-- [ ] Domaine Resend `rezoli.tn` vérifié
+- [ ] SPF/DKIM/DMARC configurés pour `rezoli.tn` (délivrabilité SMTP)
 - [ ] Première connexion admin via magic link testée
 - [ ] Un devis test soumis end-to-end (form → email → HubSpot deal)
 - [ ] `https://rezoli.tn/robots.txt` et `/sitemap.xml` répondent
@@ -551,7 +556,7 @@ Aucune permission granulaire (RBAC) en v1. Tous les admins ont les mêmes droits
 |---|---|---|
 | Supabase | dashboard.supabase.com | supabase.com/docs |
 | Vercel | vercel.com/dashboard | vercel.com/docs |
-| Resend | resend.com/dashboard | resend.com/docs |
+| SMTP (nodemailer) | — | nodemailer.com/about/ |
 | HubSpot | app.hubspot.com | developers.hubspot.com/docs/api |
 | Sentry | sentry.io | docs.sentry.io/platforms/javascript/guides/nextjs |
 | GA4 | analytics.google.com | developers.google.com/analytics |

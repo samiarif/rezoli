@@ -99,7 +99,7 @@ export default function PrivacyPolicyPage() {
       <ul>
         <li>Vercel Inc. (hébergement)</li>
         <li>Supabase Inc. (base de données et authentification)</li>
-        <li>Resend (envoi d&apos;emails transactionnels)</li>
+        <li>Hébergeur de messagerie (envoi d&apos;emails transactionnels via SMTP)</li>
       </ul>
 
       <h2>10. Contact &amp; réclamation</h2>
