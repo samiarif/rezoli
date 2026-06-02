@@ -16,6 +16,8 @@ import {
   type ServiceSlug,
 } from "@/lib/service-catalog";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Admin · Modifier le service",
   robots: { index: false, follow: false },
@@ -194,12 +196,12 @@ export default async function AdminServiceEditPage({
 
       {kind && (
         <>
-          <ServicePacksEditor kind={kind} packs={dbPacks} />
+          <ServicePacksEditor kind={kind} serviceSlug={slug} packs={dbPacks} />
           <CustomOptionsEditor serviceSlug={slug} initial={customOptions} />
         </>
       )}
 
-      {slug === "stations-street-food" && <StationsEditor stations={dbStations} />}
+      {slug === "stations-street-food" && <StationsEditor serviceSlug={slug} stations={dbStations} />}
     </div>
   );
 }

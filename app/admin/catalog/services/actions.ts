@@ -15,6 +15,142 @@ function revalidateAllCatalog() {
   updateTag(CATALOG_CACHE_TAGS.customOptions);
 }
 
+/** Materialize the entire services catalog to the DB on first mutation.
+ *  Idempotent: no-op if any Service row already exists.
+ *  This mirrors prisma/seed.ts but runs inside the app at mutation time,
+ *  preventing P2025 "record not found" errors when the DB was never seeded. */
+async function ensureServicesSeeded() {
+  if (!process.env.DATABASE_URL) return;
+  const { prisma } = await import("@/lib/prisma");
+  const count = await prisma.service.count();
+  if (count > 0) return;
+
+  const {
+    services: codeServices,
+    cocktailPacks,
+    cafePacks,
+    dejeunerPacks,
+    streetfoodStations,
+  } = await import("@/lib/service-catalog");
+
+  // 1. Upsert the 4 service rows
+  for (const [i, s] of codeServices.entries()) {
+    await prisma.service.upsert({
+      where: { slug: s.slug },
+      create: {
+        slug: s.slug,
+        name: s.name,
+        shortName: s.shortName,
+        tagline: s.tagline,
+        description: s.description,
+        longDescription: s.longDescription,
+        highlights: s.highlights,
+        minGuests: s.minGuests,
+        startingPriceTND: s.startingPriceTND,
+        badge: s.badge ?? null,
+        imageUrl: s.image,
+        imageAlt: s.imageAlt,
+        order: i,
+        published: true,
+      },
+      update: {},
+    });
+  }
+
+  const cocktail = await prisma.service.findUniqueOrThrow({ where: { slug: "cocktails-dinatoires" } });
+  const cafe = await prisma.service.findUniqueOrThrow({ where: { slug: "pauses-cafe" } });
+  const dejeuner = await prisma.service.findUniqueOrThrow({ where: { slug: "pauses-dejeuner" } });
+  const streetfood = await prisma.service.findUniqueOrThrow({ where: { slug: "stations-street-food" } });
+
+  // 2. Upsert cocktail packs
+  for (const [i, p] of cocktailPacks.entries()) {
+    await prisma.servicePack.upsert({
+      where: { serviceId_packKey: { serviceId: cocktail.id, packKey: p.id } },
+      create: {
+        serviceId: cocktail.id,
+        packKey: p.id,
+        name: p.name,
+        badgeLabel: p.badgeLabel,
+        order: i,
+        content: {
+          boissons: p.boissons,
+          sale: p.sale,
+          sucre: p.sucre,
+          nbSale: p.nbSale,
+          nbSucre: p.nbSucre,
+          prix: p.prix,
+        },
+      },
+      update: {},
+    });
+  }
+
+  // 3. Upsert café packs
+  for (const [i, p] of cafePacks.entries()) {
+    await prisma.servicePack.upsert({
+      where: { serviceId_packKey: { serviceId: cafe.id, packKey: p.id } },
+      create: {
+        serviceId: cafe.id,
+        packKey: p.id,
+        name: p.name,
+        badgeLabel: p.badgeLabel,
+        order: i,
+        content: {
+          boissons: p.boissons,
+          sale: p.sale,
+          sucre: p.sucre,
+          prixSans: p.prixSans,
+          prixAvec: p.prixAvec,
+        },
+      },
+      update: {},
+    });
+  }
+
+  // 4. Upsert déjeuner packs
+  for (const [i, p] of dejeunerPacks.entries()) {
+    await prisma.servicePack.upsert({
+      where: { serviceId_packKey: { serviceId: dejeuner.id, packKey: p.id } },
+      create: {
+        serviceId: dejeuner.id,
+        packKey: p.id,
+        name: p.name,
+        badgeLabel: p.badgeLabel,
+        order: i,
+        content: {
+          entree: p.entree,
+          plat: p.plat,
+          dessert: p.dessert,
+          boisson: p.boisson,
+          lbPrix: p.lbPrix,
+          tblPrix: p.tblPrix,
+        },
+      },
+      update: {},
+    });
+  }
+
+  // 5. Upsert street-food stations
+  for (const [i, st] of streetfoodStations.entries()) {
+    await prisma.station.upsert({
+      where: { serviceId_stationKey: { serviceId: streetfood.id, stationKey: st.id } },
+      create: {
+        serviceId: streetfood.id,
+        stationKey: st.id,
+        name: st.name,
+        description: st.description,
+        order: i,
+        pricing: {
+          prix: st.prix,
+          variants: st.variants,
+          multiVariant: st.multiVariant,
+        },
+      },
+      update: {},
+    });
+  }
+}
+
 const serviceMetaSchema = z.object({
   slug: z.string().min(2),
   name: z.string().min(2),
@@ -38,10 +174,28 @@ export async function updateServiceMeta(input: unknown) {
   if (!process.env.DATABASE_URL) {
     return { ok: false, message: "Base de données non configurée." };
   }
+  await ensureServicesSeeded();
   const { prisma } = await import("@/lib/prisma");
-  await prisma.service.update({
+  // Upsert by natural key (slug) so this works whether or not the DB was pre-seeded.
+  await prisma.service.upsert({
     where: { slug: data.slug },
-    data: {
+    create: {
+      slug: data.slug,
+      name: data.name,
+      shortName: data.shortName,
+      tagline: data.tagline,
+      description: data.description,
+      longDescription: data.longDescription,
+      highlights: data.highlights,
+      minGuests: data.minGuests,
+      startingPriceTND: data.startingPriceTND,
+      badge: data.badge ?? null,
+      imageUrl: data.imageUrl ?? null,
+      imageAlt: data.imageAlt ?? null,
+      order: data.order,
+      published: data.published,
+    },
+    update: {
       name: data.name,
       shortName: data.shortName,
       tagline: data.tagline,
@@ -65,7 +219,9 @@ export async function updateServiceMeta(input: unknown) {
 }
 
 const packSchema = z.object({
-  packId: z.string(),
+  packId: z.string(),          // kept for backwards-compat (may be "demo-xxx")
+  serviceSlug: z.string(),     // slug of the parent service
+  packKey: z.string(),         // natural key (e.g. "essentielle")
   name: z.string().min(2),
   badgeLabel: z.string().min(1),
   description: z.string().optional().nullable(),
@@ -80,19 +236,30 @@ export async function updateServicePack(input: unknown) {
   if (!process.env.DATABASE_URL) {
     return { ok: false, message: "Base de données non configurée." };
   }
+  await ensureServicesSeeded();
   const { prisma } = await import("@/lib/prisma");
-  const pack = await prisma.servicePack.update({
-    where: { id: data.packId },
-    data: {
+  // Upsert by natural key [serviceId, packKey] — safe even with "demo-xxx" packIds.
+  const service = await prisma.service.findUniqueOrThrow({ where: { slug: data.serviceSlug } });
+  await prisma.servicePack.upsert({
+    where: { serviceId_packKey: { serviceId: service.id, packKey: data.packKey } },
+    create: {
+      serviceId: service.id,
+      packKey: data.packKey,
       name: data.name,
       badgeLabel: data.badgeLabel,
       description: data.description ?? null,
       content: data.content as object,
       order: data.order,
     },
-    include: { service: true },
+    update: {
+      name: data.name,
+      badgeLabel: data.badgeLabel,
+      description: data.description ?? null,
+      content: data.content as object,
+      order: data.order,
+    },
   });
-  revalidatePath(`/nos-services/${pack.service.slug}`);
+  revalidatePath(`/nos-services/${data.serviceSlug}`);
   revalidatePath("/nos-packs");
   updateTag(CATALOG_CACHE_TAGS.packs);
   return { ok: true };
@@ -110,6 +277,7 @@ export async function replaceCustomOptions(input: unknown) {
   if (!process.env.DATABASE_URL) {
     return { ok: false, message: "Base de données non configurée." };
   }
+  await ensureServicesSeeded();
   const { prisma } = await import("@/lib/prisma");
   const service = await prisma.service.findUnique({
     where: { slug: data.serviceSlug },
@@ -134,7 +302,9 @@ export async function replaceCustomOptions(input: unknown) {
 }
 
 const stationSchema = z.object({
-  stationId: z.string(),
+  stationId: z.string(),       // kept for backwards-compat (may be "demo-xxx")
+  serviceSlug: z.string(),     // slug of the parent service
+  stationKey: z.string(),      // natural key (e.g. "fricasse")
   name: z.string().min(1),
   description: z.string().min(1),
   pricing: z.unknown(),
@@ -147,10 +317,21 @@ export async function updateStation(input: unknown) {
   if (!process.env.DATABASE_URL) {
     return { ok: false, message: "Base de données non configurée." };
   }
+  await ensureServicesSeeded();
   const { prisma } = await import("@/lib/prisma");
-  await prisma.station.update({
-    where: { id: data.stationId },
-    data: {
+  // Upsert by natural key [serviceId, stationKey] — safe even with "demo-xxx" stationIds.
+  const service = await prisma.service.findUniqueOrThrow({ where: { slug: data.serviceSlug } });
+  await prisma.station.upsert({
+    where: { serviceId_stationKey: { serviceId: service.id, stationKey: data.stationKey } },
+    create: {
+      serviceId: service.id,
+      stationKey: data.stationKey,
+      name: data.name,
+      description: data.description,
+      pricing: data.pricing as object,
+      order: data.order,
+    },
+    update: {
       name: data.name,
       description: data.description,
       pricing: data.pricing as object,

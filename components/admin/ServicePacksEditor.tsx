@@ -12,8 +12,8 @@ import { updateServicePack } from "@/app/admin/catalog/services/actions";
 type ServiceKind = "cocktails" | "cafe" | "dejeuner";
 
 type PackRow = {
-  id: string;             // DB id
-  packKey: string;
+  id: string;             // DB id (may be "demo-xxx" before first seed)
+  packKey: string;        // natural key — always reliable
   name: string;
   badgeLabel: string;
   description: string | null;
@@ -23,9 +23,11 @@ type PackRow = {
 
 export function ServicePacksEditor({
   kind,
+  serviceSlug,
   packs,
 }: {
   kind: ServiceKind;
+  serviceSlug: string;
   packs: PackRow[];
 }) {
   return (
@@ -39,14 +41,14 @@ export function ServicePacksEditor({
       </header>
       <ul className="space-y-3">
         {packs.map((p) => (
-          <PackRowEditor key={p.id} kind={kind} pack={p} />
+          <PackRowEditor key={p.id} kind={kind} serviceSlug={serviceSlug} pack={p} />
         ))}
       </ul>
     </section>
   );
 }
 
-function PackRowEditor({ kind, pack }: { kind: ServiceKind; pack: PackRow }) {
+function PackRowEditor({ kind, serviceSlug, pack }: { kind: ServiceKind; serviceSlug: string; pack: PackRow }) {
   const [open, setOpen] = React.useState(false);
   const [state, setState] = React.useState({ ...pack });
   const [busy, setBusy] = React.useState(false);
@@ -56,6 +58,8 @@ function PackRowEditor({ kind, pack }: { kind: ServiceKind; pack: PackRow }) {
     try {
       const result = await updateServicePack({
         packId: state.id,
+        serviceSlug,
+        packKey: state.packKey,
         name: state.name,
         badgeLabel: state.badgeLabel,
         description: state.description,

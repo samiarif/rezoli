@@ -16,15 +16,15 @@ type StationPricing = {
   multiVariant?: boolean;
 };
 type StationRow = {
-  id: string;
-  stationKey: string;
+  id: string;             // DB id (may be "demo-xxx" before first seed)
+  stationKey: string;     // natural key — always reliable
   name: string;
   description: string;
   pricing: StationPricing;
   order: number;
 };
 
-export function StationsEditor({ stations }: { stations: StationRow[] }) {
+export function StationsEditor({ serviceSlug, stations }: { serviceSlug: string; stations: StationRow[] }) {
   return (
     <section className="rounded-xl bg-background ring-1 ring-border p-6">
       <header className="mb-5">
@@ -36,14 +36,14 @@ export function StationsEditor({ stations }: { stations: StationRow[] }) {
       </header>
       <ul className="space-y-3">
         {stations.map((s) => (
-          <StationRowEditor key={s.id} initial={s} />
+          <StationRowEditor key={s.id} serviceSlug={serviceSlug} initial={s} />
         ))}
       </ul>
     </section>
   );
 }
 
-function StationRowEditor({ initial }: { initial: StationRow }) {
+function StationRowEditor({ serviceSlug, initial }: { serviceSlug: string; initial: StationRow }) {
   const [open, setOpen] = React.useState(false);
   const [state, setState] = React.useState(initial);
   const [busy, setBusy] = React.useState(false);
@@ -53,6 +53,8 @@ function StationRowEditor({ initial }: { initial: StationRow }) {
     try {
       const result = await updateStation({
         stationId: state.id,
+        serviceSlug,
+        stationKey: state.stationKey,
         name: state.name,
         description: state.description,
         pricing: state.pricing,
