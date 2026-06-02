@@ -118,6 +118,7 @@ export const genericDevisSchema = z.object({
   lastName: z.string().min(1, "Nom requis"),
   email: z.email("Email invalide"),
   phone: z.string().regex(phoneRegex, "Téléphone invalide"),
+  company: z.string().optional(),
   eventType: z.enum([
     "Réunion d'entreprise",
     "Séminaire / Conférence",
@@ -211,6 +212,7 @@ export const contactMessageSchema = z.object({
   name: z.string().min(2, "Nom requis"),
   email: z.email("Email invalide"),
   phone: z.string().regex(phoneRegex, "Téléphone invalide").optional().or(z.literal("")),
+  company: z.string().optional(),
   subject: z.string().min(3, "Sujet requis"),
   message: z.string().min(10, "Message trop court").max(2000),
   consentRgpd: z.boolean().refine((v) => v === true, {

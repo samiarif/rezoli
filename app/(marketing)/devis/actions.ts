@@ -37,6 +37,7 @@ export async function submitGenericDevis(
       rezoli_event_type: d.eventType,
       rezoli_service_type: d.serviceType,
       rezoli_guest_count: d.guestCount,
+      ...(d.company ? { company: d.company } : {}),
       ...(d.eventDate ? { rezoli_event_date: d.eventDate } : {}),
     },
   });
@@ -66,11 +67,13 @@ export async function submitGenericDevis(
           firstName: d.firstName,
           lastName: d.lastName,
           phone: d.phone,
+          company: d.company ?? null,
         },
         update: {
           firstName: d.firstName,
           lastName: d.lastName,
           phone: d.phone,
+          company: d.company ?? null,
         },
       });
       await prisma.quoteRequest.create({
@@ -80,6 +83,7 @@ export async function submitGenericDevis(
           firstName: d.firstName,
           lastName: d.lastName,
           phone: d.phone,
+          company: d.company ?? null,
           eventDate: d.eventDate ? new Date(d.eventDate) : null,
           eventTime: null,
           eventType: d.eventType,
@@ -119,7 +123,7 @@ export async function submitGenericDevis(
 
       const adminBody = `
         <h1 style="font-family:Georgia,serif;color:#1d8080">Nouvelle demande de devis ${ref}</h1>
-        <p><strong>${d.firstName} ${d.lastName}</strong> — ${d.email} — ${d.phone}</p>
+        <p><strong>${d.firstName} ${d.lastName}</strong> — ${d.email} — ${d.phone}${d.company ? " — " + d.company : ""}</p>
         <p>Type d'événement : <strong>${d.eventType}</strong></p>
         <p>Service : <strong>${d.serviceType}</strong></p>
         <p>${d.guestCount} invités${d.eventDate ? ` · ${d.eventDate}` : ""}</p>

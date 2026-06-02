@@ -34,6 +34,7 @@ const EMPTY: GenericDevisInput = {
   lastName: "",
   email: "",
   phone: "",
+  company: "",
   eventType: "Réunion d'entreprise",
   serviceType: "Pause café",
   guestCount: 20,
@@ -134,6 +135,17 @@ export function DevisForm({
             aria-invalid={!!errors.email}
           />
           <FieldError message={errors.email} />
+        </div>
+        <div>
+          <Label htmlFor="d-company">Société (optionnel)</Label>
+          <Input
+            id="d-company"
+            autoComplete="organization"
+            value={state.company ?? ""}
+            onChange={(e) => patch("company", e.target.value)}
+            aria-invalid={!!errors.company}
+          />
+          <FieldError message={errors.company} />
         </div>
         <div>
           <Label htmlFor="d-eventType" required>Type d&apos;événement</Label>

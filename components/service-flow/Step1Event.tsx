@@ -146,6 +146,20 @@ export function Step1Event({
               }
             />
           </div>
+          <div className="sm:col-span-2">
+            <Label htmlFor="company">Société (optionnel)</Label>
+            <Input
+              id="company"
+              autoComplete="organization"
+              value={state.company}
+              onChange={(e) =>
+                dispatch({
+                  type: "SET_CONTACT",
+                  patch: { company: e.target.value },
+                })
+              }
+            />
+          </div>
         </div>
         {!contactValid && (state.firstName || state.email || state.phone) && (
           <FieldError message="Renseignez prénom, nom, email valide et téléphone (6 chiffres min.)" />

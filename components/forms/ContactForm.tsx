@@ -104,6 +104,17 @@ export function ContactForm() {
       </div>
 
       <div>
+        <Label htmlFor="company">Société (optionnel)</Label>
+        <Input
+          id="company"
+          name="company"
+          autoComplete="organization"
+          aria-invalid={!!err.company}
+        />
+        <FieldError message={err.company} />
+      </div>
+
+      <div>
         <Label htmlFor="message" required>Votre message</Label>
         <Textarea
           id="message"

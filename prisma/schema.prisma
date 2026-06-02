@@ -186,6 +186,7 @@ model ContactMessage {
   name      String
   email     String
   phone     String?
+  company   String?
   subject   String
   message   String
   status    ContactStatus @default(NEW)

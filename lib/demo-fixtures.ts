@@ -288,6 +288,7 @@ export type DemoMessage = {
   name: string;
   email: string;
   phone: string | null;
+  company?: string | null;
   subject: string;
   message: string;
   status: "NEW" | "READ" | "REPLIED" | "ARCHIVED";

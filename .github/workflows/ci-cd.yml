@@ -117,9 +117,28 @@ jobs:
         environment:
             name: production
 
+        # DB creds for `prisma migrate deploy`. Optional: the migration step is
+        # skipped unless BOTH secrets are set, so a missing secret never breaks
+        # the deploy. DIRECT_URL must be the non-pooled Supabase connection.
+        env:
+            DATABASE_URL: ${{ secrets.DATABASE_URL }}
+            DIRECT_URL: ${{ secrets.DIRECT_URL }}
+
         steps:
-            - name: Checkout (for docker-compose.yml)
+            - name: Checkout (for docker-compose.yml + prisma migrations)
               uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 24.12.0
+
+            - name: Apply DB migrations (skipped if DB secrets unset)
+              if: ${{ env.DATABASE_URL != '' && env.DIRECT_URL != '' }}
+              # Non-blocking: a migrate hiccup (e.g. un-baselined history) must
+              # never block the app deploy. Migrations are idempotent.
+              continue-on-error: true
+              run: npx -y prisma@6 migrate deploy
 
             - name: Copy docker-compose.yml to VPS
               uses: appleboy/scp-action@v0.1.7
